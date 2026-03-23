@@ -1,0 +1,167 @@
+.periodic-table-container {
+  min-height: 100vh;
+  width: 100%;
+  padding: 20px;
+  background: #1a1a1a;
+  position: relative;
+}
+
+.element-info-overlay {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+}
+
+.periodic-table-container .table-title {
+  margin-bottom: 15px;
+  margin-left: 20px;
+  margin-top: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+}
+
+/* Quando há card de elemento, desloca a tabela para dar espaço */
+.periodic-table-container.has-element-info .table-title,
+.periodic-table-container.has-element-info .periodic-table {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 50px;
+}
+
+.periodic-table-container.has-element-info .legend {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 50px;
+}
+
+.periodic-table {
+  display: grid;
+  grid-template-columns: repeat(18, minmax(44px, 1fr));
+  gap: 3px;
+  margin-bottom: 20px;
+  margin-left: 20px;
+  max-width: calc(100% - 40px);
+  overflow-x: auto;
+  padding: 10px;
+}
+
+.periodic-table-cell {
+  aspect-ratio: 1;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 5px;
+  position: relative;
+}
+
+.periodic-table-cell:hover {
+  filter: brightness(1.2);
+  border-color: #4CAF50;
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+.periodic-table-cell.selected {
+  border-color: #ffff00;
+  box-shadow: 0 0 12px #ffff00, 0 0 4px #4CAF50;
+  filter: brightness(1.3);
+}
+
+.periodic-table-cell.empty {
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.periodic-table-cell.empty:hover {
+  transform: none;
+}
+
+.element-number {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  position: absolute;
+  top: 2px;
+  left: 4px;
+}
+
+.element-symbol-table {
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 1px #000;
+  margin: 2px 0;
+}
+
+.element-name-table {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  text-align: center;
+}
+
+.lantanides-actinides {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lantanides-row,
+.actinides-row {
+  display: grid;
+  grid-template-columns: 20px repeat(15, minmax(35px, 1fr));
+  gap: 3px;
+}
+
+.label-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #ccc;
+}
+
+.legend {
+  margin-top: 20px;
+  margin-left: 20px;
+  padding: 15px;
+  background: #333;
+  border-radius: 4px;
+  font-size: 12px;
+  max-width: calc(100% - 40px);
+}
+
+.categorias-legend {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #555;
+}
+
+.categorias-legend strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.categorias-cores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.categoria-item {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
