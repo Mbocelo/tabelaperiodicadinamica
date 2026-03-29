@@ -45,16 +45,20 @@
 }
 
 @keyframes rotate-device-tilt {
+
   0%,
   100% {
     transform: rotate(0deg);
   }
+
   35% {
     transform: rotate(-90deg);
   }
+
   50% {
     transform: rotate(-90deg);
   }
+
   85% {
     transform: rotate(0deg);
   }

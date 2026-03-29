@@ -7,6 +7,16 @@ import {
 } from '../data/elementosQuimicos';
 
 const ZOOM_THRESHOLD_NUCLEUS = 220;
+/** Câmera mais afastada ao abrir (z maior = campo mais largo / zoom mais “baixo”) */
+const CAMERA_Z_INICIAL = 520;
+const CAMERA_Z_MIN = 60;
+const CAMERA_Z_MAX = 1000;
+
+function distanciaPinça(pointersMap) {
+  if (pointersMap.size < 2) return 0;
+  const pts = [...pointersMap.values()];
+  return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+}
 
 function criarFormaOrbital(tipo, radius, cor) {
   const group = new THREE.Group();
@@ -443,7 +453,7 @@ export default function Atom3D({
       0.1,
       1000
     );
-    camera.position.set(0, 0, 300);
+    camera.position.set(0, 0, CAMERA_Z_INICIAL);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -468,8 +478,23 @@ export default function Atom3D({
     desenharAtomo(scene, atomGroup, num, neutroes);
 
     const mouse = mouseRef.current;
+    const pointers = new Map();
+    let lastPinchDistance = 0;
+
+    const aplicarLimiteZoom = () => {
+      camera.position.z = Math.max(CAMERA_Z_MIN, Math.min(CAMERA_Z_MAX, camera.position.z));
+    };
+
     const handlePointerDown = (e) => {
       if (e.button !== undefined && e.button !== 0) return;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (pointers.size === 2) {
+        mouse.isDown = false;
+        lastPinchDistance = distanciaPinça(pointers);
+        return;
+      }
+
       mouse.isDown = true;
       mouse.x = e.clientX;
       mouse.y = e.clientY;
@@ -483,10 +508,43 @@ export default function Atom3D({
         /* ignore */
       }
     };
-    const handlePointerUp = () => {
-      mouse.isDown = false;
+
+    const handlePointerUp = (e) => {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) {
+        lastPinchDistance = 0;
+      }
+      if (pointers.size === 0) {
+        mouse.isDown = false;
+      } else if (pointers.size === 1) {
+        const [pt] = [...pointers.values()];
+        mouse.isDown = true;
+        mouse.x = pt.x;
+        mouse.y = pt.y;
+        if (atomGroup) {
+          mouse.rotX = atomGroup.rotation.x;
+          mouse.rotY = atomGroup.rotation.y;
+        }
+      }
     };
+
     const handlePointerMove = (e) => {
+      if (pointers.has(e.pointerId)) {
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      if (pointers.size === 2) {
+        e.preventDefault();
+        const dist = distanciaPinça(pointers);
+        if (lastPinchDistance > 0 && dist > 0) {
+          const factor = dist / lastPinchDistance;
+          camera.position.z /= factor;
+          aplicarLimiteZoom();
+        }
+        lastPinchDistance = dist;
+        return;
+      }
+
       if (!mouse.isDown || !atomGroup) return;
       const deltaX = e.clientX - mouse.x;
       const deltaY = e.clientY - mouse.y;
@@ -497,17 +555,19 @@ export default function Atom3D({
       mouse.x = e.clientX;
       mouse.y = e.clientY;
     };
+
     const handleWheel = (e) => {
       e.preventDefault();
       const zoomDirection = e.deltaY > 0 ? 1 : -1;
-      camera.position.z += zoomDirection * 0.1 * camera.position.z * 0.1;
-      camera.position.z = Math.max(60, Math.min(1000, camera.position.z));
+      const step = e.ctrlKey ? 0.06 : 0.1;
+      camera.position.z += zoomDirection * step * camera.position.z * 0.1;
+      aplicarLimiteZoom();
     };
 
     renderer.domElement.addEventListener('pointerdown', handlePointerDown);
     renderer.domElement.addEventListener('pointerup', handlePointerUp);
     renderer.domElement.addEventListener('pointercancel', handlePointerUp);
-    renderer.domElement.addEventListener('pointermove', handlePointerMove);
+    renderer.domElement.addEventListener('pointermove', handlePointerMove, { passive: false });
     renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
 
     const handleResize = () => {
@@ -539,7 +599,7 @@ export default function Atom3D({
       renderer.domElement.removeEventListener('pointerdown', handlePointerDown);
       renderer.domElement.removeEventListener('pointerup', handlePointerUp);
       renderer.domElement.removeEventListener('pointercancel', handlePointerUp);
-      renderer.domElement.removeEventListener('pointermove', handlePointerMove);
+      renderer.domElement.removeEventListener('pointermove', handlePointerMove, { passive: false });
       renderer.domElement.removeEventListener('wheel', handleWheel);
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       if (electronAnimationIdRef.current) cancelAnimationFrame(electronAnimationIdRef.current);
