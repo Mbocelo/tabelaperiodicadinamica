@@ -9,6 +9,29 @@ import {
 const ZOOM_THRESHOLD_NUCLEUS = 220;
 /** Câmera mais afastada ao abrir (z maior = campo mais largo / zoom mais “baixo”) */
 const CAMERA_Z_INICIAL = 520;
+/** Sombra no plano horizontal (modo realidade aumentada) — abaixo das órbitas mais externas */
+const AR_SHADOW_RADIUS = 285;
+const AR_SHADOW_Y = -305;
+const AR_SHADOW_NAME = 'ar-atom-ground-shadow';
+
+/** Textura radial suave para sombra estilo “contact shadow” sobre o vídeo da câmera */
+function criarTexturaSombraRadial(size = 256) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  const c = size / 2;
+  const g = ctx.createRadialGradient(c, c, 0, c, c, c);
+  g.addColorStop(0, 'rgba(0,0,0,0.42)');
+  g.addColorStop(0.45, 'rgba(0,0,0,0.18)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 const CAMERA_Z_MIN = 60;
 const CAMERA_Z_MAX = 1000;
 
@@ -622,6 +645,51 @@ export default function Atom3D({
       scene.background = new THREE.Color(0x000000);
       renderer.setClearColor(0x000000, 1);
     }
+  }, [fundoTransparente]);
+
+  /** Sombra no “chão” só em RA: fica horizontal (não roda com o átomo) para ancorar o modelo ao espaço real */
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    const anterior = scene.getObjectByName(AR_SHADOW_NAME);
+    if (anterior) {
+      anterior.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (obj.material.map) obj.material.map.dispose();
+          obj.material.dispose();
+        }
+      });
+      scene.remove(anterior);
+    }
+
+    if (!fundoTransparente) return;
+
+    const map = criarTexturaSombraRadial(256);
+    const geo = new THREE.CircleGeometry(AR_SHADOW_RADIUS, 64);
+    const mat = new THREE.MeshBasicMaterial({
+      map: map || undefined,
+      color: map ? 0xffffff : 0x000000,
+      transparent: true,
+      opacity: map ? 1 : 0.35,
+      depthWrite: false,
+      toneMapped: false
+    });
+    const shadowMesh = new THREE.Mesh(geo, mat);
+    shadowMesh.name = AR_SHADOW_NAME;
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = AR_SHADOW_Y;
+    shadowMesh.renderOrder = -2;
+
+    scene.add(shadowMesh);
+
+    return () => {
+      scene.remove(shadowMesh);
+      geo.dispose();
+      if (map) map.dispose();
+      mat.dispose();
+    };
   }, [fundoTransparente]);
 
   useEffect(() => {
