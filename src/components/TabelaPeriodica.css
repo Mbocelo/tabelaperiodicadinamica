@@ -279,7 +279,7 @@
  */
 @media (max-width: 1024px) and (orientation: portrait) {
   .periodic-table-container {
-    --periodic-cell-min: 28px;
+    --periodic-cell-min: 36px;
     max-width: none;
     padding-top: 12px;
     padding-bottom: 12px;
@@ -308,6 +308,7 @@
   }
 
   .periodic-table {
+    gap: 4px;
     margin-left: 12px;
     max-width: calc(100% - 24px);
     overflow-x: auto;
@@ -324,15 +325,20 @@
   }
 
   .element-number {
-    font-size: clamp(8px, 1.35vmin, 11px);
+    font-size: clamp(9px, 1.55vmin, 12px);
   }
 
   .element-symbol-table {
-    font-size: clamp(10px, 2.6vmin, 16px);
+    font-size: clamp(12px, 3vmin, 18px);
   }
 
   .element-name-table {
-    font-size: clamp(5px, 1.25vmin, 8px);
+    font-size: clamp(6px, 1.4vmin, 9px);
+  }
+
+  .lantanides-row,
+  .actinides-row {
+    gap: 4px;
   }
 
   .periodic-table-container.has-element-info .table-title {
