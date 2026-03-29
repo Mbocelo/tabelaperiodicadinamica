@@ -153,7 +153,6 @@ export default function Atom3D({
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
-  const luzAmbienteArRef = useRef(null);
   const atomGroupRef = useRef(null);
   const nucleusSimpleRef = useRef(null);
   const nucleusDetailedRef = useRef(null);
@@ -544,11 +543,6 @@ export default function Atom3D({
       renderer.domElement.removeEventListener('wheel', handleWheel);
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       if (electronAnimationIdRef.current) cancelAnimationFrame(electronAnimationIdRef.current);
-      const sceneEnd = sceneRef.current;
-      if (sceneEnd && luzAmbienteArRef.current) {
-        sceneEnd.remove(luzAmbienteArRef.current);
-        luzAmbienteArRef.current = null;
-      }
       renderer.dispose();
       rendererRef.current = null;
       if (container.contains(renderer.domElement)) {
@@ -561,25 +555,12 @@ export default function Atom3D({
     const scene = sceneRef.current;
     const renderer = rendererRef.current;
     if (!scene || !renderer) return;
-
     if (fundoTransparente) {
       scene.background = null;
       renderer.setClearColor(0x000000, 0);
-      /* Neblina exponencial: partes mais distantes escurecem — sensação de profundidade sobre o vídeo */
-      scene.fog = new THREE.FogExp2(0x0a0c14, 0.00135);
-      if (!luzAmbienteArRef.current) {
-        const hemi = new THREE.HemisphereLight(0x9eb4d8, 0x1a1a22, 0.42);
-        scene.add(hemi);
-        luzAmbienteArRef.current = hemi;
-      }
     } else {
       scene.background = new THREE.Color(0x000000);
       renderer.setClearColor(0x000000, 1);
-      scene.fog = null;
-      if (luzAmbienteArRef.current) {
-        scene.remove(luzAmbienteArRef.current);
-        luzAmbienteArRef.current = null;
-      }
     }
   }, [fundoTransparente]);
 
