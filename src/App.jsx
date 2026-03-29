@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
@@ -26,6 +26,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ScienceIcon from '@mui/icons-material/Science';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import VideocamIcon from '@mui/icons-material/Videocam';
 import Atom3D from './components/Atom3D';
 import { AppMenuBar } from './components/AppMenu';
 import TabelaPeriodica from './components/TabelaPeriodica';
@@ -306,10 +307,68 @@ function App() {
   const [subniveisAnchor, setSubniveisAnchor] = useState(null);
   const [drawerAberto, setDrawerAberto] = useState(false);
   const [paginaInfo, setPaginaInfo] = useState(null);
+  /** Câmera ao fundo do átomo (estilo RA) — só em telas abaixo do breakpoint md */
+  const [modoRealidadeAumentada, setModoRealidadeAumentada] = useState(false);
+  const videoCameraRef = useRef(null);
+  const streamCameraRef = useRef(null);
 
   useEffect(() => {
     if (layoutDesktop) setPainelElementoAberto(false);
   }, [layoutDesktop]);
+
+  useEffect(() => {
+    if (!dialogAberto) setModoRealidadeAumentada(false);
+  }, [dialogAberto]);
+
+  useEffect(() => {
+    if (!dialogAberto || !dialogMobileLayout || !modoRealidadeAumentada) {
+      if (streamCameraRef.current) {
+        streamCameraRef.current.getTracks().forEach((t) => t.stop());
+        streamCameraRef.current = null;
+      }
+      const v = videoCameraRef.current;
+      if (v) v.srcObject = null;
+      return undefined;
+    }
+
+    const video = videoCameraRef.current;
+    let cancelled = false;
+
+    const iniciar = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamCameraRef.current = stream;
+        if (video) {
+          video.srcObject = stream;
+          await video.play().catch(() => {});
+        }
+      } catch {
+        setModoRealidadeAumentada(false);
+      }
+    };
+
+    iniciar();
+
+    return () => {
+      cancelled = true;
+      if (streamCameraRef.current) {
+        streamCameraRef.current.getTracks().forEach((t) => t.stop());
+        streamCameraRef.current = null;
+      }
+      if (video) video.srcObject = null;
+    };
+  }, [dialogAberto, dialogMobileLayout, modoRealidadeAumentada]);
 
   const handleDesenharAtomo = () => {
     const num = parseInt(String(numeroAtomico), 10);
@@ -331,7 +390,10 @@ function App() {
     }
   };
 
-  const handleFecharDialog = () => setDialogAberto(false);
+  const handleFecharDialog = () => {
+    setModoRealidadeAumentada(false);
+    setDialogAberto(false);
+  };
 
   const elemento = elementosQuimicos[numeroAtomico];
 
@@ -626,6 +688,32 @@ function App() {
             >
               Subníveis ▾
             </Button>
+            {dialogMobileLayout && (
+              <Button
+                size="medium"
+                variant={modoRealidadeAumentada ? 'contained' : 'outlined'}
+                color={modoRealidadeAumentada ? 'secondary' : 'inherit'}
+                startIcon={<VideocamIcon />}
+                onClick={() => setModoRealidadeAumentada((v) => !v)}
+                sx={(theme) => ({
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  py: 1,
+                  px: 1.75,
+                  minHeight: 44,
+                  flexShrink: 0,
+                  borderColor: alpha('#fff', 0.14),
+                  color: modoRealidadeAumentada ? undefined : 'grey.200',
+                  '&:hover': {
+                    borderColor: alpha(theme.palette.secondary.main, 0.55),
+                    bgcolor: modoRealidadeAumentada ? undefined : alpha(theme.palette.secondary.main, 0.08)
+                  }
+                })}
+              >
+                {modoRealidadeAumentada ? 'RA ligado' : 'Câmera RA'}
+              </Button>
+            )}
             <Menu
               anchorEl={subniveisAnchor}
               open={Boolean(subniveisAnchor)}
@@ -677,27 +765,57 @@ function App() {
               flex: dialogMobileLayout ? '1 1 auto' : undefined,
               minHeight: dialogMobileLayout ? 0 : { xs: 420, sm: 500 },
               height: dialogMobileLayout ? undefined : { xs: 420, sm: 500 },
-              bgcolor: '#050608',
+              bgcolor: modoRealidadeAumentada && dialogMobileLayout ? '#000' : '#050608',
               position: 'relative',
               '&::after': {
                 content: '""',
                 position: 'absolute',
                 inset: 0,
                 pointerEvents: 'none',
-                boxShadow: `inset 0 0 80px ${alpha('#000', 0.45)}`,
+                zIndex: 2,
+                boxShadow: `inset 0 0 80px ${alpha('#000', modoRealidadeAumentada && dialogMobileLayout ? 0.25 : 0.45)}`,
                 borderRadius: 0
               }
             })}
           >
-            {dialogAberto && (
-              <Atom3D
-                numeroAtomico={numeroAtomico}
-                neutroes={elemento?.neutroes}
-                mostrarEletrons={mostrarEletrons}
-                forcarNucleoDetalhado={forcarNucleoDetalhado}
-                subniveisVisiveis={subniveisVisiveis}
+            {dialogMobileLayout && (
+              <video
+                ref={videoCameraRef}
+                autoPlay
+                muted
+                playsInline
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  zIndex: 0,
+                  display: modoRealidadeAumentada ? 'block' : 'none',
+                  pointerEvents: 'none',
+                  backgroundColor: '#000'
+                }}
               />
             )}
+            <Box
+              sx={{
+                position: 'relative',
+                zIndex: 1,
+                width: '100%',
+                height: '100%'
+              }}
+            >
+              {dialogAberto && (
+                <Atom3D
+                  numeroAtomico={numeroAtomico}
+                  neutroes={elemento?.neutroes}
+                  mostrarEletrons={mostrarEletrons}
+                  forcarNucleoDetalhado={forcarNucleoDetalhado}
+                  subniveisVisiveis={subniveisVisiveis}
+                  fundoTransparente={Boolean(dialogMobileLayout && modoRealidadeAumentada)}
+                />
+              )}
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions

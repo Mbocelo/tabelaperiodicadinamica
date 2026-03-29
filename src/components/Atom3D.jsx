@@ -145,11 +145,14 @@ export default function Atom3D({
   neutroes,
   mostrarEletrons = true,
   forcarNucleoDetalhado = false,
-  subniveisVisiveis = { s: true, p: true, d: true, f: true }
+  subniveisVisiveis = { s: true, p: true, d: true, f: true },
+  /** Fundo transparente para sobrepor o vídeo da câmera (modo RA em celular) */
+  fundoTransparente = false
 }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
+  const rendererRef = useRef(null);
   const atomGroupRef = useRef(null);
   const nucleusSimpleRef = useRef(null);
   const nucleusDetailedRef = useRef(null);
@@ -443,9 +446,12 @@ export default function Atom3D({
     camera.position.set(0, 0, 300);
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 1);
+    renderer.domElement.style.touchAction = 'none';
+    rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -462,7 +468,8 @@ export default function Atom3D({
     desenharAtomo(scene, atomGroup, num, neutroes);
 
     const mouse = mouseRef.current;
-    const handleMouseDown = (e) => {
+    const handlePointerDown = (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
       mouse.isDown = true;
       mouse.x = e.clientX;
       mouse.y = e.clientY;
@@ -470,19 +477,25 @@ export default function Atom3D({
         mouse.rotX = atomGroup.rotation.x;
         mouse.rotY = atomGroup.rotation.y;
       }
-    };
-    const handleMouseUp = () => { mouse.isDown = false; };
-    const handleMouseMove = (e) => {
-      if (mouse.isDown && atomGroup) {
-        const deltaX = e.clientX - mouse.x;
-        const deltaY = e.clientY - mouse.y;
-        mouse.rotY += deltaX * 0.005;
-        mouse.rotX += deltaY * 0.005;
-        atomGroup.rotation.y = mouse.rotY;
-        atomGroup.rotation.x = mouse.rotX;
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch (_) {
+        /* ignore */
       }
+    };
+    const handlePointerUp = () => {
+      mouse.isDown = false;
+    };
+    const handlePointerMove = (e) => {
+      if (!mouse.isDown || !atomGroup) return;
+      const deltaX = e.clientX - mouse.x;
+      const deltaY = e.clientY - mouse.y;
+      mouse.rotY += deltaX * 0.005;
+      mouse.rotX += deltaY * 0.005;
+      atomGroup.rotation.y = mouse.rotY;
+      atomGroup.rotation.x = mouse.rotX;
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
     };
     const handleWheel = (e) => {
       e.preventDefault();
@@ -491,9 +504,10 @@ export default function Atom3D({
       camera.position.z = Math.max(60, Math.min(1000, camera.position.z));
     };
 
-    renderer.domElement.addEventListener('mousedown', handleMouseDown);
-    renderer.domElement.addEventListener('mouseup', handleMouseUp);
-    renderer.domElement.addEventListener('mousemove', handleMouseMove);
+    renderer.domElement.addEventListener('pointerdown', handlePointerDown);
+    renderer.domElement.addEventListener('pointerup', handlePointerUp);
+    renderer.domElement.addEventListener('pointercancel', handlePointerUp);
+    renderer.domElement.addEventListener('pointermove', handlePointerMove);
     renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
 
     const handleResize = () => {
@@ -522,18 +536,33 @@ export default function Atom3D({
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      renderer.domElement.removeEventListener('mousedown', handleMouseDown);
-      renderer.domElement.removeEventListener('mouseup', handleMouseUp);
-      renderer.domElement.removeEventListener('mousemove', handleMouseMove);
+      renderer.domElement.removeEventListener('pointerdown', handlePointerDown);
+      renderer.domElement.removeEventListener('pointerup', handlePointerUp);
+      renderer.domElement.removeEventListener('pointercancel', handlePointerUp);
+      renderer.domElement.removeEventListener('pointermove', handlePointerMove);
       renderer.domElement.removeEventListener('wheel', handleWheel);
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       if (electronAnimationIdRef.current) cancelAnimationFrame(electronAnimationIdRef.current);
       renderer.dispose();
+      rendererRef.current = null;
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
   }, []);
+
+  useEffect(() => {
+    const scene = sceneRef.current;
+    const renderer = rendererRef.current;
+    if (!scene || !renderer) return;
+    if (fundoTransparente) {
+      scene.background = null;
+      renderer.setClearColor(0x000000, 0);
+    } else {
+      scene.background = new THREE.Color(0x000000);
+      renderer.setClearColor(0x000000, 1);
+    }
+  }, [fundoTransparente]);
 
   useEffect(() => {
     const atomGroup = atomGroupRef.current;
