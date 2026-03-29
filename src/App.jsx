@@ -294,6 +294,8 @@ ElementoInfoCard.propTypes = {
 function App() {
   const theme = useTheme();
   const layoutDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  /** Telefone e tablet: dialog 3D em ecrã completo e layout flexível */
+  const dialogMobileLayout = useMediaQuery(theme.breakpoints.down('md'));
   const [numeroAtomico, setNumeroAtomico] = useState(6);
   const [elementoSelecionado, setElementoSelecionado] = useState(6);
   const [painelElementoAberto, setPainelElementoAberto] = useState(false);
@@ -408,58 +410,219 @@ function App() {
       <Dialog
         open={dialogAberto}
         onClose={handleFecharDialog}
-        maxWidth="md"
+        fullScreen={dialogMobileLayout}
+        maxWidth="lg"
         fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: 'background.paper',
-            borderRadius: 2
+        scroll="paper"
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: dialogMobileLayout ? 'rgba(4, 6, 12, 0.92)' : 'rgba(4, 6, 12, 0.78)',
+              backdropFilter: dialogMobileLayout ? 'none' : 'blur(14px)',
+              WebkitBackdropFilter: dialogMobileLayout ? 'none' : 'blur(14px)'
+            }
           }
         }}
+        PaperProps={{
+          elevation: 0,
+          sx: (theme) =>
+            dialogMobileLayout
+              ? {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  maxHeight: '100dvh',
+                  margin: 0,
+                  borderRadius: 0,
+                  pt: 'env(safe-area-inset-top, 0px)',
+                  bgcolor: alpha(theme.palette.background.paper, 0.98),
+                  backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
+                  border: 'none',
+                  boxShadow: 'none'
+                }
+              : {
+                  width: '100%',
+                  maxWidth: 'min(960px, calc(100vw - 24px))',
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  bgcolor: alpha(theme.palette.background.paper, 0.92),
+                  backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
+                  border: `1px solid ${alpha('#fff', 0.08)}`,
+                  boxShadow: `0 32px 64px -16px rgba(0,0,0,0.75), 0 0 0 1px ${alpha(theme.palette.primary.main, 0.18)}, inset 0 1px 0 ${alpha('#fff', 0.04)}`
+                }
+        }}
       >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>
-            Modelo atômico 3D {elemento && `– ${elemento.simbolo} ${elemento.nome}`}
-          </span>
-          <IconButton aria-label="fechar" onClick={handleFecharDialog} size="small">
+        <DialogTitle
+          component="div"
+          sx={(theme) => ({
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 1.5, sm: 2 },
+            py: { xs: 1.5, sm: 2 },
+            px: { xs: 1.5, sm: 2.5 },
+            pr: { xs: 1, sm: 1 },
+            flexShrink: 0,
+            borderBottom: `1px solid ${alpha('#fff', 0.06)}`,
+            background: `linear-gradient(105deg, ${alpha(theme.palette.primary.main, 0.14)} 0%, transparent 55%)`
+          })}
+        >
+          <Box
+            sx={(theme) => ({
+              width: { xs: 40, sm: 48 },
+              height: { xs: 40, sm: 48 },
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              bgcolor: alpha(theme.palette.primary.main, 0.18),
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.35)}`,
+              boxShadow: `0 0 24px ${alpha(theme.palette.primary.main, 0.2)}`
+            })}
+          >
+            <ScienceIcon sx={{ fontSize: { xs: 22, sm: 28 }, color: 'primary.light' }} />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              variant="overline"
+              sx={{
+                color: 'primary.main',
+                letterSpacing: { xs: 1.5, sm: 2 },
+                fontSize: { xs: '0.6rem', sm: '0.65rem' },
+                lineHeight: 1.2
+              }}
+            >
+              Visualização interativa
+            </Typography>
+            <Typography
+              variant="h6"
+              component="h2"
+              sx={{ fontWeight: 700, lineHeight: 1.25, mt: 0.25, fontSize: { xs: '1rem', sm: '1.25rem' } }}
+            >
+              Modelo atômico 3D
+            </Typography>
+            {elemento && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.5, fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+              >
+                <Box component="span" sx={{ color: 'secondary.main', fontWeight: 700, mr: 0.75 }}>
+                  {elemento.simbolo}
+                </Box>
+                {elemento.nome}
+              </Typography>
+            )}
+          </Box>
+          <IconButton
+            aria-label="fechar"
+            onClick={handleFecharDialog}
+            size={dialogMobileLayout ? 'medium' : 'small'}
+            sx={(theme) => ({
+              color: 'grey.400',
+              bgcolor: alpha('#fff', 0.06),
+              flexShrink: 0,
+              minWidth: dialogMobileLayout ? 44 : undefined,
+              minHeight: dialogMobileLayout ? 44 : undefined,
+              '&:hover': { bgcolor: alpha('#fff', 0.12), color: 'common.white' }
+            })}
+          >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ p: 0, bgcolor: '#0a0a0a' }}>
+        <DialogContent
+          sx={{
+            p: 0,
+            bgcolor: 'transparent',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            ...(dialogMobileLayout
+              ? { flex: '1 1 auto', minHeight: 0 }
+              : { overflow: 'hidden' })
+          }}
+        >
           <Box
-            sx={{
+            sx={(theme) => ({
               display: 'flex',
-              flexWrap: 'wrap',
+              flexWrap: { xs: 'nowrap', sm: 'wrap' },
+              flexDirection: 'row',
               gap: 1,
-              p: 1.5,
-              bgcolor: '#1a1a1a',
-              borderBottom: 1,
-              borderColor: 'divider',
-              alignItems: 'center'
-            }}
+              py: { xs: 1.25, sm: 2 },
+              px: { xs: 1.25, sm: 2 },
+              alignItems: 'center',
+              flexShrink: 0,
+              overflowX: { xs: 'auto', sm: 'visible' },
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: { xs: 'thin', sm: 'auto' },
+              bgcolor: alpha('#000', 0.28),
+              borderBottom: `1px solid ${alpha('#fff', 0.05)}`
+            })}
           >
             <Button
-              size="small"
+              size={dialogMobileLayout ? 'medium' : 'small'}
               variant="outlined"
-              color="secondary"
               startIcon={mostrarEletrons ? <VisibilityOffIcon /> : <VisibilityIcon />}
               onClick={() => setMostrarEletrons(!mostrarEletrons)}
+              sx={(theme) => ({
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: dialogMobileLayout ? 1 : 0.75,
+                px: dialogMobileLayout ? 1.75 : 1.5,
+                minHeight: dialogMobileLayout ? 44 : undefined,
+                flexShrink: 0,
+                borderColor: alpha('#fff', 0.14),
+                color: 'grey.200',
+                '&:hover': {
+                  borderColor: alpha(theme.palette.primary.main, 0.55),
+                  bgcolor: alpha(theme.palette.primary.main, 0.08)
+                }
+              })}
             >
-              {mostrarEletrons ? 'Ocultar Elétrons' : 'Mostrar Elétrons'}
+              {mostrarEletrons ? 'Ocultar elétrons' : 'Mostrar elétrons'}
             </Button>
             <Button
-              size="small"
+              size={dialogMobileLayout ? 'medium' : 'small'}
               variant="outlined"
-              color="secondary"
               onClick={() => setForcarNucleoDetalhado(!forcarNucleoDetalhado)}
+              sx={(theme) => ({
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: dialogMobileLayout ? 1 : 0.75,
+                px: dialogMobileLayout ? 1.75 : 1.5,
+                minHeight: dialogMobileLayout ? 44 : undefined,
+                flexShrink: 0,
+                borderColor: alpha('#fff', 0.14),
+                color: 'grey.200',
+                '&:hover': {
+                  borderColor: alpha(theme.palette.primary.main, 0.55),
+                  bgcolor: alpha(theme.palette.primary.main, 0.08)
+                }
+              })}
             >
-              {forcarNucleoDetalhado ? 'Esconder Núcleo' : 'Mostrar Núcleo'}
+              {forcarNucleoDetalhado ? 'Esconder núcleo' : 'Mostrar núcleo'}
             </Button>
             <Button
-              size="small"
+              size={dialogMobileLayout ? 'medium' : 'small'}
               variant="outlined"
-              color="secondary"
               onClick={(e) => setSubniveisAnchor(e.currentTarget)}
+              sx={(theme) => ({
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: dialogMobileLayout ? 1 : 0.75,
+                px: dialogMobileLayout ? 1.75 : 1.5,
+                minHeight: dialogMobileLayout ? 44 : undefined,
+                flexShrink: 0,
+                borderColor: alpha('#fff', 0.14),
+                color: 'grey.200',
+                '&:hover': {
+                  borderColor: alpha(theme.palette.primary.main, 0.55),
+                  bgcolor: alpha(theme.palette.primary.main, 0.08)
+                }
+              })}
             >
               Subníveis ▾
             </Button>
@@ -472,13 +635,25 @@ function App() {
               anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
               transformOrigin={{ vertical: 'top', horizontal: 'left' }}
               MenuListProps={{ onClick: (e) => e.stopPropagation() }}
+              slotProps={{
+                paper: {
+                  sx: (theme) => ({
+                    mt: 0.75,
+                    borderRadius: 2,
+                    border: `1px solid ${alpha('#fff', 0.08)}`,
+                    bgcolor: alpha(theme.palette.background.paper, 0.98),
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
+                    maxWidth: 'min(100vw - 24px, 320px)'
+                  })
+                }
+              }}
             >
               {['s', 'p', 'd', 'f'].map((t) => (
-                <MenuItem key={t} dense disableRipple>
+                <MenuItem key={t} dense={!dialogMobileLayout} disableRipple>
                   <FormControlLabel
                     control={
                       <Checkbox
-                        size="small"
+                        size={dialogMobileLayout ? 'medium' : 'small'}
                         checked={subniveisVisiveis[t]}
                         onChange={(e) =>
                           setSubniveisVisiveis((prev) => ({ ...prev, [t]: e.target.checked }))
@@ -496,7 +671,24 @@ function App() {
               ))}
             </Menu>
           </Box>
-          <Box sx={{ width: '100%', height: 500, minHeight: 500 }}>
+          <Box
+            sx={(theme) => ({
+              width: '100%',
+              flex: dialogMobileLayout ? '1 1 auto' : undefined,
+              minHeight: dialogMobileLayout ? 0 : { xs: 420, sm: 500 },
+              height: dialogMobileLayout ? undefined : { xs: 420, sm: 500 },
+              bgcolor: '#050608',
+              position: 'relative',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                boxShadow: `inset 0 0 80px ${alpha('#000', 0.45)}`,
+                borderRadius: 0
+              }
+            })}
+          >
             {dialogAberto && (
               <Atom3D
                 numeroAtomico={numeroAtomico}
@@ -508,8 +700,34 @@ function App() {
             )}
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 2, py: 1.5 }}>
-          <Button onClick={handleFecharDialog} variant="outlined">
+        <DialogActions
+          sx={(theme) => ({
+            px: { xs: 1.5, sm: 2.5 },
+            py: { xs: 1.5, sm: 2 },
+            flexShrink: 0,
+            borderTop: `1px solid ${alpha('#fff', 0.06)}`,
+            bgcolor: alpha('#000', 0.2),
+            justifyContent: 'flex-end',
+            pb: { xs: 'max(12px, env(safe-area-inset-bottom, 0px))', sm: 2 },
+            gap: 1
+          })}
+        >
+          <Button
+            onClick={handleFecharDialog}
+            variant="contained"
+            color="primary"
+            size={dialogMobileLayout ? 'large' : 'medium'}
+            fullWidth={dialogMobileLayout}
+            sx={(theme) => ({
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: dialogMobileLayout ? 2 : 2.5,
+              py: dialogMobileLayout ? 1.25 : 1,
+              minHeight: dialogMobileLayout ? 48 : undefined,
+              boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.35)}`
+            })}
+          >
             Fechar
           </Button>
         </DialogActions>
