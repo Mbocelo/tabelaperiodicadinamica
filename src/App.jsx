@@ -189,9 +189,13 @@ function ElementoInfoCard({
         marginLeft: fullWidth ? 0 : { xs: 0, md: 6 },
         maxWidth: fullWidth ? 'none' : { xs: 'min(100%, 380px)', md: 340 },
         width: fullWidth ? '100%' : { xs: '100%', md: 'auto' },
-        borderRadius: mostrarBotaoFechar ? { xs: 0, sm: 2 } : 2,
-        overflow: layoutPaisagemDrawer ? 'visible' : 'hidden',
+        /* No drawer: cantos iguais. No drawer inferior: alinhar ao raio do Drawer (16px) para a borda não “cortar” no canto superior direito */
+        borderRadius: mostrarBotaoFechar
+          ? { xs: '16px 16px 0 0', sm: 2 }
+          : 2,
+        overflow: 'hidden',
         bgcolor: 'background.paper',
+        boxSizing: 'border-box',
         border: `1px solid ${alpha(categoriaCor, 0.4)}`,
         boxShadow: `0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px ${alpha(categoriaCor, 0.12)}`,
         '& .MuiTypography-root': { color: 'text.primary' }
@@ -202,7 +206,7 @@ function ElementoInfoCard({
           position: 'relative',
           px: layoutPaisagemDrawer ? 1.25 : 2,
           py: layoutPaisagemDrawer ? 1 : 2,
-          pr: mostrarBotaoFechar ? (layoutPaisagemDrawer ? 4 : 5) : layoutPaisagemDrawer ? 1.25 : 2,
+          pr: mostrarBotaoFechar ? (layoutPaisagemDrawer ? 5 : 5.5) : layoutPaisagemDrawer ? 1.25 : 2,
           background: `linear-gradient(155deg, ${alpha(categoriaCor, 0.28)} 0%, ${alpha(categoriaCor, 0.06)} 55%, transparent 100%)`,
           borderBottom: `1px solid ${alpha(categoriaCor, 0.22)}`
         }}
@@ -215,8 +219,8 @@ function ElementoInfoCard({
             size="small"
             sx={{
               position: 'absolute',
-              top: layoutPaisagemDrawer ? 4 : 8,
-              right: layoutPaisagemDrawer ? 4 : 8,
+              top: layoutPaisagemDrawer ? 6 : 10,
+              right: layoutPaisagemDrawer ? 6 : 10,
               zIndex: 1,
               color: 'text.secondary',
               '&:hover': { bgcolor: 'action.hover' }
@@ -335,6 +339,7 @@ function ElementoInfoCard({
         sx={{
           px: layoutPaisagemDrawer ? 1.25 : 2,
           py: layoutPaisagemDrawer ? 1 : 1.5,
+          pb: mostrarBotaoFechar && !layoutPaisagemDrawer ? 2 : layoutPaisagemDrawer ? 1.25 : 1.5,
           bgcolor: (t) => alpha(t.palette.action.hover, t.palette.mode === 'dark' ? 0.35 : 1),
           borderTop: 1,
           borderColor: 'divider'
@@ -568,9 +573,12 @@ function App() {
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',
             bgcolor: 'background.paper',
-            pb: 'env(safe-area-inset-bottom, 0px)',
+            boxSizing: 'border-box',
+            /* Respiro por baixo: borda do cartão + barra de gestos / safe area */
+            paddingBottom: 'max(20px, calc(12px + env(safe-area-inset-bottom, 0px)))',
             '@media (orientation: landscape) and (max-height: 500px)': {
-              maxHeight: '100dvh'
+              maxHeight: '100dvh',
+              paddingBottom: 'max(16px, calc(8px + env(safe-area-inset-bottom, 0px)))'
             }
           }
         }}
