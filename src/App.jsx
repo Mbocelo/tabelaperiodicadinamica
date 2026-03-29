@@ -50,8 +50,136 @@ function ElementoInfoCard({
   mostrarBotaoFechar = false,
   onFechar
 }) {
+  const theme = useTheme();
+  const paisagemEmMovel = useMediaQuery('(max-width: 1024px) and (orientation: landscape)');
+  /** Painel inferior (drawer): em paisagem o ecrã é baixo — layout em duas colunas e mais compacto */
+  const layoutPaisagemDrawer = Boolean(fullWidth && paisagemEmMovel);
+
   const categoriaCor = CATEGORIAS[elemento.categoria]?.cor ?? '#4CAF50';
   const configTexto = configParaTexto(obterConfiguracaoEletronica(numeroAtomico));
+
+  const dadosGrid = (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: layoutPaisagemDrawer ? 'repeat(2, minmax(0, 1fr))' : '1fr 1fr',
+        gap: layoutPaisagemDrawer ? 0.75 : 1.5,
+        columnGap: layoutPaisagemDrawer ? 1 : 2
+      }}
+    >
+      {[
+        { label: 'Nº atômico', value: numeroAtomico },
+        { label: 'Nêutrons', value: elemento.neutroes },
+        { label: 'Massa atômica', value: `${elemento.massaAtomica} u` },
+        { label: 'Raio atômico', value: `${elemento.raioAtomico} pm` }
+      ].map(({ label, value }) => (
+        <Box key={label}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            sx={{ lineHeight: 1.15, fontSize: layoutPaisagemDrawer ? '0.65rem' : undefined }}
+          >
+            {label}
+          </Typography>
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            sx={{
+              mt: 0.25,
+              fontSize: layoutPaisagemDrawer ? '0.75rem' : undefined,
+              lineHeight: 1.25
+            }}
+          >
+            {value}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+
+  const blocoConfigESubníveis = (
+    <>
+      <Box sx={{ mb: layoutPaisagemDrawer ? 0 : 1, py: layoutPaisagemDrawer ? 0 : undefined }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          display="block"
+          sx={{ mb: layoutPaisagemDrawer ? 0.35 : 0.75, fontSize: layoutPaisagemDrawer ? '0.65rem' : undefined }}
+        >
+          Configuração eletrónica
+        </Typography>
+        <Typography
+          variant="body2"
+          component="div"
+          sx={{
+            fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
+            fontSize: layoutPaisagemDrawer ? '0.68rem' : '0.8125rem',
+            lineHeight: 1.4,
+            bgcolor: 'action.hover',
+            color: 'text.primary',
+            px: layoutPaisagemDrawer ? 0.75 : 1.25,
+            py: layoutPaisagemDrawer ? 0.5 : 1,
+            borderRadius: 1,
+            wordBreak: 'break-word',
+            maxHeight: layoutPaisagemDrawer ? 88 : 'none',
+            overflowY: layoutPaisagemDrawer ? 'auto' : 'visible',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
+          {configTexto}
+        </Typography>
+      </Box>
+
+      <Box sx={{ pb: layoutPaisagemDrawer ? 0 : 1.5, pt: layoutPaisagemDrawer ? 0.5 : 0 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            mb: layoutPaisagemDrawer ? 0.35 : 0.85,
+            display: 'block',
+            fontSize: layoutPaisagemDrawer ? '0.65rem' : undefined
+          }}
+        >
+          Subníveis (legenda)
+        </Typography>
+        <Stack direction="row" flexWrap="wrap" sx={{ gap: layoutPaisagemDrawer ? 0.4 : 0.75 }}>
+          {['s', 'p', 'd', 'f'].map((t) => (
+            <Box
+              key={t}
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.45,
+                px: layoutPaisagemDrawer ? 0.6 : 1,
+                py: 0.25,
+                borderRadius: 10,
+                bgcolor: alpha(SUBLEVEL_COLORS_HEX[t], 0.14),
+                border: `1px solid ${alpha(SUBLEVEL_COLORS_HEX[t], 0.35)}`
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  width: layoutPaisagemDrawer ? 6 : 8,
+                  height: layoutPaisagemDrawer ? 6 : 8,
+                  borderRadius: '50%',
+                  bgcolor: SUBLEVEL_COLORS_HEX[t]
+                }}
+              />
+              <Typography
+                variant="caption"
+                component="span"
+                sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: layoutPaisagemDrawer ? '0.65rem' : undefined }}
+              >
+                {t}
+              </Typography>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
+    </>
+  );
 
   return (
     <Paper
@@ -62,7 +190,7 @@ function ElementoInfoCard({
         maxWidth: fullWidth ? 'none' : { xs: 'min(100%, 380px)', md: 340 },
         width: fullWidth ? '100%' : { xs: '100%', md: 'auto' },
         borderRadius: mostrarBotaoFechar ? { xs: 0, sm: 2 } : 2,
-        overflow: 'hidden',
+        overflow: layoutPaisagemDrawer ? 'visible' : 'hidden',
         bgcolor: 'background.paper',
         border: `1px solid ${alpha(categoriaCor, 0.4)}`,
         boxShadow: `0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px ${alpha(categoriaCor, 0.12)}`,
@@ -72,9 +200,9 @@ function ElementoInfoCard({
       <Box
         sx={{
           position: 'relative',
-          px: 2,
-          py: 2,
-          pr: mostrarBotaoFechar ? 5 : 2,
+          px: layoutPaisagemDrawer ? 1.25 : 2,
+          py: layoutPaisagemDrawer ? 1 : 2,
+          pr: mostrarBotaoFechar ? (layoutPaisagemDrawer ? 4 : 5) : layoutPaisagemDrawer ? 1.25 : 2,
           background: `linear-gradient(155deg, ${alpha(categoriaCor, 0.28)} 0%, ${alpha(categoriaCor, 0.06)} 55%, transparent 100%)`,
           borderBottom: `1px solid ${alpha(categoriaCor, 0.22)}`
         }}
@@ -87,28 +215,34 @@ function ElementoInfoCard({
             size="small"
             sx={{
               position: 'absolute',
-              top: 8,
-              right: 8,
+              top: layoutPaisagemDrawer ? 4 : 8,
+              right: layoutPaisagemDrawer ? 4 : 8,
               zIndex: 1,
               color: 'text.secondary',
               '&:hover': { bgcolor: 'action.hover' }
             }}
           >
-            <CloseIcon />
+            <CloseIcon fontSize={layoutPaisagemDrawer ? 'small' : 'medium'} />
           </IconButton>
         )}
         <Typography
           variant="overline"
-          sx={{ letterSpacing: 1.1, color: 'text.secondary', fontSize: '0.65rem', display: 'block' }}
+          sx={{
+            letterSpacing: 1.1,
+            color: 'text.secondary',
+            fontSize: layoutPaisagemDrawer ? '0.58rem' : '0.65rem',
+            display: 'block',
+            lineHeight: 1.2
+          }}
         >
           Elemento selecionado
         </Typography>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mt: 1 }}>
+        <Stack direction="row" alignItems="center" spacing={layoutPaisagemDrawer ? 1.25 : 2} sx={{ mt: layoutPaisagemDrawer ? 0.5 : 1 }}>
           <Box
             sx={{
-              width: 76,
-              height: 76,
-              borderRadius: 2,
+              width: layoutPaisagemDrawer ? 52 : 76,
+              height: layoutPaisagemDrawer ? 52 : 76,
+              borderRadius: layoutPaisagemDrawer ? 1.5 : 2,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -125,126 +259,91 @@ function ElementoInfoCard({
                 fontWeight: 800,
                 color: 'common.white',
                 lineHeight: 1,
-                fontSize: { xs: '2rem', sm: '2.125rem' }
+                fontSize: layoutPaisagemDrawer ? '1.35rem' : { xs: '2rem', sm: '2.125rem' }
               }}
             >
               {elemento.simbolo}
             </Typography>
           </Box>
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="h6" component="p" sx={{ fontWeight: 700, lineHeight: 1.3, mb: 0.75 }}>
+            <Typography
+              variant="h6"
+              component="p"
+              sx={{
+                fontWeight: 700,
+                lineHeight: 1.25,
+                mb: layoutPaisagemDrawer ? 0.35 : 0.75,
+                fontSize: layoutPaisagemDrawer ? '0.95rem' : undefined
+              }}
+            >
               {elemento.nome}
             </Typography>
             <Chip
               label={CATEGORIAS[elemento.categoria]?.nome ?? '—'}
               size="small"
               sx={{
-                height: 26,
+                height: layoutPaisagemDrawer ? 22 : 26,
                 maxWidth: '100%',
                 fontWeight: 600,
-                fontSize: '0.72rem',
+                fontSize: layoutPaisagemDrawer ? '0.65rem' : '0.72rem',
                 bgcolor: alpha(categoriaCor, 0.22),
                 color: 'common.white',
                 border: `1px solid ${alpha(categoriaCor, 0.45)}`,
-                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' }
+                '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', px: layoutPaisagemDrawer ? 0.75 : 1 }
               }}
             />
           </Box>
         </Stack>
       </Box>
 
-      <Box sx={{ px: 2, py: 1.75 }}>
-        <Box
+      {layoutPaisagemDrawer ? (
+        <Stack
+          direction="row"
+          spacing={1.25}
+          alignItems="stretch"
           sx={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 1.5,
-            columnGap: 2
-          }}
-        >
-          {[
-            { label: 'Nº atômico', value: numeroAtomico },
-            { label: 'Nêutrons', value: elemento.neutroes },
-            { label: 'Massa atômica', value: `${elemento.massaAtomica} u` },
-            { label: 'Raio atômico', value: `${elemento.raioAtomico} pm` }
-          ].map(({ label, value }) => (
-            <Box key={label}>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                {label}
-              </Typography>
-              <Typography variant="body2" fontWeight={600} sx={{ mt: 0.35 }}>
-                {value}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      </Box>
-
-      <Divider sx={{ borderColor: 'divider' }} />
-
-      <Box sx={{ px: 2, py: 1.5 }}>
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.75 }}>
-          Configuração eletrónica
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
-            fontSize: '0.8125rem',
-            lineHeight: 1.5,
-            bgcolor: 'action.hover',
-            color: 'text.primary',
             px: 1.25,
             py: 1,
-            borderRadius: 1,
-            wordBreak: 'break-word'
+            gap: 1.25,
+            borderTop: `1px solid ${theme.palette.divider}`,
+            minHeight: 0
           }}
         >
-          {configTexto}
-        </Typography>
-      </Box>
-
-      <Box sx={{ px: 2, pb: 1.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ mb: 0.85, display: 'block' }}>
-          Subníveis (legenda)
-        </Typography>
-        <Stack direction="row" flexWrap="wrap" sx={{ gap: 0.75 }}>
-          {['s', 'p', 'd', 'f'].map((t) => (
-            <Box
-              key={t}
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.6,
-                px: 1,
-                py: 0.35,
-                borderRadius: 10,
-                bgcolor: alpha(SUBLEVEL_COLORS_HEX[t], 0.14),
-                border: `1px solid ${alpha(SUBLEVEL_COLORS_HEX[t], 0.35)}`
-              }}
-            >
-              <Box component="span" sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: SUBLEVEL_COLORS_HEX[t] }} />
-              <Typography variant="caption" component="span" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>
-                {t}
-              </Typography>
-            </Box>
-          ))}
+          <Box sx={{ flex: '0 0 38%', minWidth: 0, maxWidth: '42%' }}>{dadosGrid}</Box>
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-start',
+              overflow: 'hidden'
+            }}
+          >
+            {blocoConfigESubníveis}
+          </Box>
         </Stack>
-      </Box>
+      ) : (
+        <>
+          <Box sx={{ px: 2, py: 1.75 }}>{dadosGrid}</Box>
+          <Divider sx={{ borderColor: 'divider' }} />
+          <Box sx={{ px: 2, py: 1.5 }}>{blocoConfigESubníveis}</Box>
+        </>
+      )}
 
       <Box
         sx={{
-          px: 2,
-          py: 1.5,
-          bgcolor: (theme) => alpha(theme.palette.action.hover, theme.palette.mode === 'dark' ? 0.35 : 1),
+          px: layoutPaisagemDrawer ? 1.25 : 2,
+          py: layoutPaisagemDrawer ? 1 : 1.5,
+          bgcolor: (t) => alpha(t.palette.action.hover, t.palette.mode === 'dark' ? 0.35 : 1),
           borderTop: 1,
           borderColor: 'divider'
         }}
       >
         <Stack
-          direction={{ xs: 'column', sm: 'row' }}
+          direction={layoutPaisagemDrawer ? 'row' : { xs: 'column', sm: 'row' }}
           spacing={1}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
+          alignItems={layoutPaisagemDrawer ? 'center' : { xs: 'stretch', sm: 'center' }}
           justifyContent="flex-start"
         >
           <TextField
@@ -257,17 +356,25 @@ function ElementoInfoCard({
             }}
             inputProps={{ min: 1, max: 118 }}
             size="small"
-            sx={{ width: { xs: '100%', sm: 108 } }}
+            sx={{
+              width: layoutPaisagemDrawer ? 96 : { xs: '100%', sm: 108 },
+              flexShrink: 0
+            }}
           />
           <Button
             variant="contained"
             color="primary"
-            startIcon={<ScienceIcon />}
+            startIcon={layoutPaisagemDrawer ? undefined : <ScienceIcon />}
             onClick={onAbrir3D}
-            size="medium"
-            sx={{ width: { xs: '100%', sm: 'auto' }, minHeight: 40 }}
+            size={layoutPaisagemDrawer ? 'small' : 'medium'}
+            sx={{
+              width: layoutPaisagemDrawer ? { xs: 'auto', sm: 'auto' } : { xs: '100%', sm: 'auto' },
+              minHeight: layoutPaisagemDrawer ? 34 : 40,
+              flex: layoutPaisagemDrawer ? '1 1 auto' : undefined,
+              minWidth: 0
+            }}
           >
-            Modelo 3D
+            {layoutPaisagemDrawer ? '3D' : 'Modelo 3D'}
           </Button>
         </Stack>
       </Box>
@@ -351,7 +458,7 @@ function App() {
         streamCameraRef.current = stream;
         if (video) {
           video.srcObject = stream;
-          await video.play().catch(() => {});
+          await video.play().catch(() => { });
         }
       } catch {
         setModoRealidadeAumentada(false);
@@ -454,9 +561,17 @@ function App() {
           sx: {
             borderTopLeftRadius: 16,
             borderTopRightRadius: 16,
-            maxHeight: '90vh',
-            overflow: 'auto',
-            bgcolor: 'background.paper'
+            width: '100%',
+            maxWidth: '100vw',
+            maxHeight: 'min(95dvh, 100vh)',
+            overflowX: 'hidden',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            bgcolor: 'background.paper',
+            pb: 'env(safe-area-inset-bottom, 0px)',
+            '@media (orientation: landscape) and (max-height: 500px)': {
+              maxHeight: '100dvh'
+            }
           }
         }}
       >
@@ -490,28 +605,28 @@ function App() {
           sx: (theme) =>
             dialogMobileLayout
               ? {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  maxHeight: '100dvh',
-                  margin: 0,
-                  borderRadius: 0,
-                  pt: 'env(safe-area-inset-top, 0px)',
-                  bgcolor: alpha(theme.palette.background.paper, 0.98),
-                  backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
-                  border: 'none',
-                  boxShadow: 'none'
-                }
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                maxHeight: '100dvh',
+                margin: 0,
+                borderRadius: 0,
+                pt: 'env(safe-area-inset-top, 0px)',
+                bgcolor: alpha(theme.palette.background.paper, 0.98),
+                backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
+                border: 'none',
+                boxShadow: 'none'
+              }
               : {
-                  width: '100%',
-                  maxWidth: 'min(960px, calc(100vw - 24px))',
-                  borderRadius: 3,
-                  overflow: 'hidden',
-                  bgcolor: alpha(theme.palette.background.paper, 0.92),
-                  backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
-                  border: `1px solid ${alpha('#fff', 0.08)}`,
-                  boxShadow: `0 32px 64px -16px rgba(0,0,0,0.75), 0 0 0 1px ${alpha(theme.palette.primary.main, 0.18)}, inset 0 1px 0 ${alpha('#fff', 0.04)}`
-                }
+                width: '100%',
+                maxWidth: 'min(960px, calc(100vw - 24px))',
+                borderRadius: 3,
+                overflow: 'hidden',
+                bgcolor: alpha(theme.palette.background.paper, 0.92),
+                backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
+                border: `1px solid ${alpha('#fff', 0.08)}`,
+                boxShadow: `0 32px 64px -16px rgba(0,0,0,0.75), 0 0 0 1px ${alpha(theme.palette.primary.main, 0.18)}, inset 0 1px 0 ${alpha('#fff', 0.04)}`
+              }
         }}
       >
         <DialogTitle
@@ -580,14 +695,14 @@ function App() {
             aria-label="fechar"
             onClick={handleFecharDialog}
             size={dialogMobileLayout ? 'medium' : 'small'}
-            sx={(theme) => ({
+            sx={{
               color: 'grey.400',
               bgcolor: alpha('#fff', 0.06),
               flexShrink: 0,
               minWidth: dialogMobileLayout ? 44 : undefined,
               minHeight: dialogMobileLayout ? 44 : undefined,
               '&:hover': { bgcolor: alpha('#fff', 0.12), color: 'common.white' }
-            })}
+            }}
           >
             <CloseIcon />
           </IconButton>
@@ -605,7 +720,7 @@ function App() {
           }}
         >
           <Box
-            sx={(theme) => ({
+            sx={{
               display: 'flex',
               flexWrap: { xs: 'nowrap', sm: 'wrap' },
               flexDirection: 'row',
@@ -619,7 +734,7 @@ function App() {
               scrollbarWidth: { xs: 'thin', sm: 'auto' },
               bgcolor: alpha('#000', 0.28),
               borderBottom: `1px solid ${alpha('#fff', 0.05)}`
-            })}
+            }}
           >
             <Button
               size={dialogMobileLayout ? 'medium' : 'small'}
@@ -760,7 +875,7 @@ function App() {
             </Menu>
           </Box>
           <Box
-            sx={(theme) => ({
+            sx={{
               width: '100%',
               flex: dialogMobileLayout ? '1 1 auto' : undefined,
               minHeight: dialogMobileLayout ? 0 : { xs: 420, sm: 500 },
@@ -776,7 +891,7 @@ function App() {
                 boxShadow: `inset 0 0 80px ${alpha('#000', modoRealidadeAumentada && dialogMobileLayout ? 0.25 : 0.45)}`,
                 borderRadius: 0
               }
-            })}
+            }}
           >
             {dialogMobileLayout && (
               <video
@@ -819,7 +934,7 @@ function App() {
           </Box>
         </DialogContent>
         <DialogActions
-          sx={(theme) => ({
+          sx={{
             px: { xs: 1.5, sm: 2.5 },
             py: { xs: 1.5, sm: 2 },
             flexShrink: 0,
@@ -828,7 +943,7 @@ function App() {
             justifyContent: 'flex-end',
             pb: { xs: 'max(12px, env(safe-area-inset-bottom, 0px))', sm: 2 },
             gap: 1
-          })}
+          }}
         >
           <Button
             onClick={handleFecharDialog}
