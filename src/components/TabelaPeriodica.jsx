@@ -41,34 +41,43 @@ export default function TabelaPeriodica({ numeroAtomico, onSelecionarElemento, e
   return (
     <div className={`periodic-table-container ${elementoInfo ? 'has-element-info' : ''}`}>
       {elementoInfo && (
-        <div className="element-info-overlay">
+        <aside className="element-info-sidebar" aria-label="Dados do elemento selecionado">
           {elementoInfo}
-        </div>
+        </aside>
       )}
-      <h2 className="table-title">Tabela Periódica — Clique em um elemento</h2>
-      <div className="periodic-table">
-        {celulasPrincipais}
-      </div>
-      <div className="legend">
-        <strong>Lantanídeos e Actinídeos:</strong>
-        <div className="lantanides-actinides">
-          <div className="lantanides-row">
-            <div className="label-cell">La:</div>
-            {lantanides.map((num) => criarCelula(num, 'la-'))}
-          </div>
-          <div className="actinides-row">
-            <div className="label-cell">Ac:</div>
-            {actinides.map((num) => criarCelula(num, 'ac-'))}
-          </div>
-        </div>
-        <div className="categorias-legend">
-          <strong>Tipos de elementos:</strong>
-          <div className="categorias-cores">
-            {Object.entries(CATEGORIAS).map(([key, { nome, cor }]) => (
-              <span key={key} className="categoria-item" style={{ backgroundColor: cor }}>
-                {nome}
-              </span>
-            ))}
+      <div className="periodic-table-main">
+        <h2 className="table-title">Tabela Periódica</h2>
+        <p className="periodic-table-portrait-hint" aria-live="polite">
+          Modo retrato: a tabela foi girada para usar melhor a largura do ecrã. Em paisagem, o layout é normal.
+        </p>
+        <div className="periodic-table-responsive">
+          <div className="periodic-table-rotate-inner">
+            <div className="periodic-table">
+              {celulasPrincipais}
+            </div>
+            <div className="legend">
+              <strong>Lantanídeos e Actinídeos:</strong>
+              <div className="lantanides-actinides">
+                <div className="lantanides-row">
+                  <div className="label-cell">La:</div>
+                  {lantanides.map((num) => criarCelula(num, 'la-'))}
+                </div>
+                <div className="actinides-row">
+                  <div className="label-cell">Ac:</div>
+                  {actinides.map((num) => criarCelula(num, 'ac-'))}
+                </div>
+              </div>
+              <div className="categorias-legend">
+                <strong>Tipos de elementos:</strong>
+                <div className="categorias-cores">
+                  {Object.entries(CATEGORIAS).map(([key, { nome, cor }]) => (
+                    <span key={key} className="categoria-item" style={{ backgroundColor: cor }}>
+                      {nome}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

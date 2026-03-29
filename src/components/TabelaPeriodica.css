@@ -1,43 +1,96 @@
 .periodic-table-container {
+  --periodic-cell-min: 44px;
+  --periodic-table-max-width: 1280px;
   min-height: 100vh;
   width: 100%;
+  max-width: var(--periodic-table-max-width);
+  margin-left: auto;
+  margin-right: auto;
   padding: 20px;
+  box-sizing: border-box;
   background: #1a1a1a;
   position: relative;
 }
 
-.element-info-overlay {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 100;
+.periodic-table-portrait-hint {
+  display: none;
+  margin: 0 20px 12px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.35;
+}
+
+.periodic-table-responsive {
+  width: 100%;
+}
+
+.periodic-table-main {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Cartão à esquerda em ecrãs grandes (lg+) — ver media query abaixo */
+.element-info-sidebar {
+  display: none;
 }
 
 .periodic-table-container .table-title {
-  margin-bottom: 15px;
-  margin-left: 20px;
-  margin-top: 0;
+  margin: 0 auto 15px;
+  padding: 0 16px;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
   color: rgba(255, 255, 255, 0.9);
   font-size: 1.1rem;
 }
 
-/* Quando há card de elemento, desloca a tabela para dar espaço */
-.periodic-table-container.has-element-info .table-title,
-.periodic-table-container.has-element-info .periodic-table {
-  margin-left: 20px;
-  margin-right: 20px;
-  margin-top: 50px;
+@media (min-width: 1200px) {
+  .periodic-table-container.has-element-info {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 20px;
+    max-width: min(1600px, 100%);
+    padding-top: 16px;
+  }
+
+  .periodic-table-container.has-element-info .element-info-sidebar {
+    display: block;
+    flex: 0 0 340px;
+    width: 340px;
+    max-width: min(340px, 32vw);
+    position: sticky;
+    top: 48px;
+    align-self: flex-start;
+    z-index: 5;
+  }
+
+  .periodic-table-container.has-element-info .periodic-table-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .periodic-table-container.has-element-info .table-title,
+  .periodic-table-container.has-element-info .periodic-table-responsive {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0;
+  }
+
+  .periodic-table-container.has-element-info .legend {
+    margin-left: 20px;
+    margin-right: 0;
+    margin-top: 20px;
+  }
 }
 
-.periodic-table-container.has-element-info .legend {
-  margin-left: 20px;
-  margin-right: 20px;
-  margin-top: 50px;
+.periodic-table-rotate-inner {
+  width: 100%;
 }
 
 .periodic-table {
   display: grid;
-  grid-template-columns: repeat(18, minmax(44px, 1fr));
+  grid-template-columns: repeat(18, minmax(var(--periodic-cell-min), 1fr));
   gap: 3px;
   margin-bottom: 20px;
   margin-left: 20px;
@@ -50,14 +103,22 @@
   aspect-ratio: 1;
   border: 2px solid rgba(0, 0, 0, 0.3);
   border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  padding: 5px;
+  padding: 3px 4px 4px;
   position: relative;
+  box-sizing: border-box;
+}
+
+/* Grelha: número em cima, símbolo ao centro (sem cobrir o número), nome em baixo */
+.periodic-table-cell:not(.empty) {
+  display: grid;
+  grid-template-rows: minmax(0, auto) 1fr minmax(0, auto);
+  grid-template-columns: 1fr;
+  gap: 1px;
+  align-items: center;
+  justify-items: stretch;
+  min-height: 0;
 }
 
 .periodic-table-cell:hover {
@@ -84,29 +145,44 @@
 }
 
 .element-number {
-  font-size: 13px;
+  font-size: clamp(9px, 1.65vmin, 12px);
   font-weight: 600;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-  position: absolute;
-  top: 2px;
-  left: 4px;
+  line-height: 1.1;
+  justify-self: start;
+  align-self: start;
+  padding: 1px 0 0 1px;
+  white-space: nowrap;
 }
 
 .element-symbol-table {
-  font-size: 20px;
+  font-size: clamp(12px, 3.2vmin, 20px);
   font-weight: bold;
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 1px #000;
-  margin: 2px 0;
+  margin: 0;
+  line-height: 1;
+  text-align: center;
+  justify-self: center;
+  align-self: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .element-name-table {
-  font-size: 10px;
+  font-size: clamp(6px, 1.45vmin, 10px);
   font-weight: 500;
   color: rgba(255, 255, 255, 0.95);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   text-align: center;
+  line-height: 1.15;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  align-self: end;
+  max-height: 2.4em;
 }
 
 .lantanides-actinides {
@@ -119,8 +195,9 @@
 .lantanides-row,
 .actinides-row {
   display: grid;
-  grid-template-columns: 20px repeat(15, minmax(35px, 1fr));
+  grid-template-columns: minmax(20px, auto) repeat(15, minmax(var(--periodic-cell-min), 1fr));
   gap: 3px;
+  align-items: stretch;
 }
 
 .label-cell {
@@ -164,4 +241,112 @@
   font-size: 11px;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Tablet / telemóvel em paisagem: células um pouco menores, scroll horizontal */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .periodic-table-container {
+    --periodic-cell-min: 34px;
+    max-width: none;
+    padding: 12px;
+  }
+
+  .periodic-table-container .table-title {
+    font-size: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 12px;
+  }
+
+  .periodic-table {
+    margin-left: 12px;
+    max-width: calc(100% - 24px);
+  }
+
+  .legend {
+    margin-left: 12px;
+    max-width: calc(100% - 24px);
+  }
+
+  .element-number {
+    font-size: clamp(8px, 1.4vmin, 11px);
+  }
+
+  .element-symbol-table {
+    font-size: clamp(11px, 2.8vmin, 16px);
+  }
+
+  .element-name-table {
+    font-size: clamp(6px, 1.3vmin, 9px);
+  }
+}
+
+/* Telemóvel / tablet em retrato: girar bloco da tabela para usar o eixo longo do ecrã */
+@media (max-width: 1024px) and (orientation: portrait) {
+  .periodic-table-portrait-hint {
+    display: block;
+  }
+
+  .periodic-table-container {
+    --periodic-cell-min: 30px;
+    max-width: none;
+    padding: 12px;
+  }
+
+  .periodic-table-container .table-title {
+    font-size: 0.95rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 12px;
+  }
+
+  .periodic-table-responsive {
+    position: relative;
+    width: 100%;
+    height: min(calc(100dvh - 200px), calc(100vw * 2.2));
+    min-height: min(85vw, 720px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 4px 0;
+  }
+
+  .periodic-table-rotate-inner {
+    flex: 0 0 auto;
+    width: min(calc(100vh - 96px), 1280px);
+    max-height: none;
+    transform: rotate(-90deg);
+    transform-origin: center center;
+    margin: auto;
+    padding-bottom: 8px;
+  }
+
+  .periodic-table {
+    margin-left: 12px;
+    max-width: calc(100% - 24px);
+  }
+
+  .legend {
+    margin-left: 12px;
+    max-width: calc(100% - 24px);
+    padding: 12px;
+  }
+
+  .element-number {
+    font-size: clamp(8px, 1.35vmin, 11px);
+  }
+
+  .element-symbol-table {
+    font-size: clamp(10px, 2.6vmin, 16px);
+  }
+
+  .element-name-table {
+    font-size: clamp(5px, 1.25vmin, 8px);
+  }
+
+  .periodic-table-container.has-element-info .table-title {
+    margin-top: 8px;
+  }
 }
