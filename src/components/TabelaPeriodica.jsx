@@ -47,37 +47,6 @@ export default function TabelaPeriodica({ numeroAtomico, onSelecionarElemento, e
       )}
       <div className="periodic-table-main">
         <h2 className="table-title">Tabela Periódica</h2>
-        <div
-          className="rotate-device-prompt"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="rotate-device-icon-wrap" aria-hidden>
-            <svg
-              className="rotate-device-phone-svg"
-              viewBox="0 0 120 200"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="18"
-                y="12"
-                width="84"
-                height="176"
-                rx="14"
-                ry="14"
-                fill="none"
-                stroke="rgba(129, 140, 248, 0.95)"
-                strokeWidth="4"
-              />
-              <rect x="48" y="24" width="24" height="4" rx="2" fill="rgba(129, 140, 248, 0.5)" />
-              <circle cx="60" cy="176" r="6" fill="rgba(129, 140, 248, 0.45)" />
-            </svg>
-          </div>
-          <p className="rotate-device-heading">Use o seu dispositivo na horizontal</p>
-          <p className="rotate-device-text">
-            Gire o telemóvel ou o tablet para o modo paisagem para visualizar a tabela periódica.
-          </p>
-        </div>
         <div className="periodic-table-responsive">
           <div className="periodic-table-rotate-inner">
             <div className="periodic-table">
