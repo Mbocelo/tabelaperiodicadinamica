@@ -48,7 +48,7 @@ export default function TabelaPeriodica({ numeroAtomico, onSelecionarElemento, e
       <div className="periodic-table-main">
         <h2 className="table-title">Tabela Periódica</h2>
         <p className="periodic-table-portrait-hint" aria-live="polite">
-          Modo retrato: deslize a grelha na horizontal para ver todas as colunas e a página na vertical para todos os períodos. Em paisagem o layout fica mais largo.
+          Modo retrato: a tabela foi girada para usar melhor a largura do ecrã. Em paisagem, o layout é normal.
         </p>
         <div className="periodic-table-responsive">
           <div className="periodic-table-rotate-inner">

@@ -281,20 +281,16 @@
   }
 }
 
-/*
- * Telemóvel / tablet em retrato: sem rotação — a rotação cortava o conteúdo (linhas a partir
- * do sódio / período 3). Scroll vertical na página + horizontal na grelha mostra toda a tabela.
- */
+/* Telemóvel / tablet em retrato: girar bloco da tabela para usar o eixo longo do ecrã */
 @media (max-width: 1024px) and (orientation: portrait) {
   .periodic-table-portrait-hint {
     display: block;
   }
 
   .periodic-table-container {
-    --periodic-cell-min: 28px;
+    --periodic-cell-min: 30px;
     max-width: none;
     padding: 12px;
-    min-height: auto;
   }
 
   .periodic-table-container .table-title {
@@ -307,37 +303,35 @@
   .periodic-table-responsive {
     position: relative;
     width: 100%;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    overflow: visible;
-    display: block;
+    height: min(calc(100dvh - 200px), calc(100vw * 2.2));
+    min-height: min(85vw, 720px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
     padding: 4px 0;
   }
 
   .periodic-table-rotate-inner {
-    width: 100%;
-    max-width: 100%;
-    transform: none;
-    transform-origin: initial;
-    margin: 0 auto;
+    flex: 0 0 auto;
+    width: min(calc(100vh - 96px), 1280px);
+    max-height: none;
+    transform: rotate(-90deg);
+    transform-origin: center center;
+    margin: auto;
     padding-bottom: 8px;
   }
 
   .periodic-table {
     margin-left: 12px;
     max-width: calc(100% - 24px);
-    overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
   }
 
   .legend {
     margin-left: 12px;
     max-width: calc(100% - 24px);
     padding: 12px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
   }
 
   .element-number {
