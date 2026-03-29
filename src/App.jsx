@@ -297,6 +297,8 @@ function App() {
   const layoutDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   /** Telefone e tablet: dialog 3D em ecrã completo e layout flexível */
   const dialogMobileLayout = useMediaQuery(theme.breakpoints.down('md'));
+  /** Ecrãs muito estreitos: rótulos ainda mais curtos na barra de ferramentas */
+  const dialogMobileEstreito = useMediaQuery(theme.breakpoints.down('sm'));
   const [numeroAtomico, setNumeroAtomico] = useState(6);
   const [elementoSelecionado, setElementoSelecionado] = useState(6);
   const [painelElementoAberto, setPainelElementoAberto] = useState(false);
@@ -412,6 +414,28 @@ function App() {
     }
     : null;
 
+  const rotuloEletronsDialogo = dialogMobileLayout
+    ? mostrarEletrons
+      ? 'Ocultar e⁻'
+      : 'Ver e⁻'
+    : mostrarEletrons
+      ? 'Ocultar elétrons'
+      : 'Mostrar elétrons';
+  const rotuloNucleoDialogo = dialogMobileLayout
+    ? forcarNucleoDetalhado
+      ? 'Núcleo simples'
+      : 'Núcleo detalhe'
+    : forcarNucleoDetalhado
+      ? 'Esconder núcleo'
+      : 'Mostrar núcleo';
+  const rotuloRaDialogo = dialogMobileEstreito
+    ? modoRealidadeAumentada
+      ? 'RA ✓'
+      : 'RA'
+    : modoRealidadeAumentada
+      ? 'RA ligado'
+      : 'Câmera RA';
+
   return (
     <Box
       sx={{
@@ -476,6 +500,18 @@ function App() {
         maxWidth="lg"
         fullWidth
         scroll="paper"
+        sx={
+          dialogMobileLayout
+            ? {
+                '& .MuiDialog-paper': {
+                  height: '100dvh',
+                  maxHeight: '100dvh',
+                  minHeight: 0,
+                  overflow: 'hidden'
+                }
+              }
+            : undefined
+        }
         slotProps={{
           backdrop: {
             sx: {
@@ -492,11 +528,13 @@ function App() {
               ? {
                   display: 'flex',
                   flexDirection: 'column',
-                  height: '100%',
+                  height: '100dvh',
                   maxHeight: '100dvh',
+                  minHeight: 0,
                   margin: 0,
                   borderRadius: 0,
                   pt: 'env(safe-area-inset-top, 0px)',
+                  overflow: 'hidden',
                   bgcolor: alpha(theme.palette.background.paper, 0.98),
                   backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
                   border: 'none',
@@ -519,10 +557,10 @@ function App() {
           sx={(theme) => ({
             display: 'flex',
             alignItems: 'center',
-            gap: { xs: 1.5, sm: 2 },
-            py: { xs: 1.5, sm: 2 },
-            px: { xs: 1.5, sm: 2.5 },
-            pr: { xs: 1, sm: 1 },
+            gap: dialogMobileLayout ? 1 : { xs: 1.5, sm: 2 },
+            py: dialogMobileLayout ? 1 : { xs: 1.5, sm: 2 },
+            px: dialogMobileLayout ? 1.25 : { xs: 1.5, sm: 2.5 },
+            pr: dialogMobileLayout ? 0.75 : { xs: 1, sm: 1 },
             flexShrink: 0,
             borderBottom: `1px solid ${alpha('#fff', 0.06)}`,
             background: `linear-gradient(105deg, ${alpha(theme.palette.primary.main, 0.14)} 0%, transparent 55%)`
@@ -530,8 +568,8 @@ function App() {
         >
           <Box
             sx={(theme) => ({
-              width: { xs: 40, sm: 48 },
-              height: { xs: 40, sm: 48 },
+              width: dialogMobileLayout ? 36 : { xs: 40, sm: 48 },
+              height: dialogMobileLayout ? 36 : { xs: 40, sm: 48 },
               borderRadius: 2,
               display: 'flex',
               alignItems: 'center',
@@ -542,12 +580,15 @@ function App() {
               boxShadow: `0 0 24px ${alpha(theme.palette.primary.main, 0.2)}`
             })}
           >
-            <ScienceIcon sx={{ fontSize: { xs: 22, sm: 28 }, color: 'primary.light' }} />
+            <ScienceIcon
+              sx={{ fontSize: dialogMobileLayout ? 20 : { xs: 22, sm: 28 }, color: 'primary.light' }}
+            />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="overline"
               sx={{
+                display: dialogMobileLayout ? 'none' : 'block',
                 color: 'primary.main',
                 letterSpacing: { xs: 1.5, sm: 2 },
                 fontSize: { xs: '0.6rem', sm: '0.65rem' },
@@ -559,15 +600,25 @@ function App() {
             <Typography
               variant="h6"
               component="h2"
-              sx={{ fontWeight: 700, lineHeight: 1.25, mt: 0.25, fontSize: { xs: '1rem', sm: '1.25rem' } }}
+              sx={{
+                fontWeight: 700,
+                lineHeight: 1.2,
+                mt: dialogMobileLayout ? 0 : 0.25,
+                fontSize: dialogMobileLayout ? '0.95rem' : { xs: '1rem', sm: '1.25rem' }
+              }}
             >
-              Modelo atômico 3D
+              Modelo 3D
             </Typography>
             {elemento && (
               <Typography
                 variant="body2"
                 color="text.secondary"
-                sx={{ mt: 0.5, fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                noWrap={dialogMobileLayout}
+                sx={{
+                  mt: dialogMobileLayout ? 0.25 : 0.5,
+                  fontWeight: 500,
+                  fontSize: dialogMobileLayout ? '0.75rem' : { xs: '0.8rem', sm: '0.875rem' }
+                }}
               >
                 <Box component="span" sx={{ color: 'secondary.main', fontWeight: 700, mr: 0.75 }}>
                   {elemento.simbolo}
@@ -579,13 +630,13 @@ function App() {
           <IconButton
             aria-label="fechar"
             onClick={handleFecharDialog}
-            size={dialogMobileLayout ? 'medium' : 'small'}
+            size="small"
             sx={(theme) => ({
               color: 'grey.400',
               bgcolor: alpha('#fff', 0.06),
               flexShrink: 0,
-              minWidth: dialogMobileLayout ? 44 : undefined,
-              minHeight: dialogMobileLayout ? 44 : undefined,
+              minWidth: dialogMobileLayout ? 40 : undefined,
+              minHeight: dialogMobileLayout ? 40 : undefined,
               '&:hover': { bgcolor: alpha('#fff', 0.12), color: 'common.white' }
             })}
           >
@@ -607,14 +658,14 @@ function App() {
           <Box
             sx={(theme) => ({
               display: 'flex',
-              flexWrap: { xs: 'nowrap', sm: 'wrap' },
+              flexWrap: dialogMobileLayout ? 'wrap' : { xs: 'nowrap', sm: 'wrap' },
               flexDirection: 'row',
-              gap: 1,
-              py: { xs: 1.25, sm: 2 },
-              px: { xs: 1.25, sm: 2 },
-              alignItems: 'center',
+              gap: dialogMobileLayout ? 0.75 : 1,
+              py: dialogMobileLayout ? 0.75 : { xs: 1.25, sm: 2 },
+              px: dialogMobileLayout ? 1 : { xs: 1.25, sm: 2 },
+              alignItems: 'stretch',
               flexShrink: 0,
-              overflowX: { xs: 'auto', sm: 'visible' },
+              overflowX: dialogMobileLayout ? 'visible' : { xs: 'auto', sm: 'visible' },
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: { xs: 'thin', sm: 'auto' },
               bgcolor: alpha('#000', 0.28),
@@ -622,18 +673,33 @@ function App() {
             })}
           >
             <Button
-              size={dialogMobileLayout ? 'medium' : 'small'}
+              size="small"
               variant="outlined"
-              startIcon={mostrarEletrons ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              startIcon={
+                dialogMobileLayout ? undefined : mostrarEletrons ? (
+                  <VisibilityOffIcon fontSize="small" />
+                ) : (
+                  <VisibilityIcon fontSize="small" />
+                )
+              }
               onClick={() => setMostrarEletrons(!mostrarEletrons)}
               sx={(theme) => ({
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
-                py: dialogMobileLayout ? 1 : 0.75,
-                px: dialogMobileLayout ? 1.75 : 1.5,
-                minHeight: dialogMobileLayout ? 44 : undefined,
+                py: dialogMobileLayout ? 0.65 : 0.75,
+                px: dialogMobileLayout ? 0.75 : 1.5,
+                minHeight: dialogMobileLayout ? 36 : undefined,
                 flexShrink: 0,
+                ...(dialogMobileLayout
+                  ? {
+                      flex: '1 1 45%',
+                      minWidth: 0,
+                      maxWidth: 'calc(50% - 4px)',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.2
+                    }
+                  : {}),
                 borderColor: alpha('#fff', 0.14),
                 color: 'grey.200',
                 '&:hover': {
@@ -642,20 +708,29 @@ function App() {
                 }
               })}
             >
-              {mostrarEletrons ? 'Ocultar elétrons' : 'Mostrar elétrons'}
+              {rotuloEletronsDialogo}
             </Button>
             <Button
-              size={dialogMobileLayout ? 'medium' : 'small'}
+              size="small"
               variant="outlined"
               onClick={() => setForcarNucleoDetalhado(!forcarNucleoDetalhado)}
               sx={(theme) => ({
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
-                py: dialogMobileLayout ? 1 : 0.75,
-                px: dialogMobileLayout ? 1.75 : 1.5,
-                minHeight: dialogMobileLayout ? 44 : undefined,
+                py: dialogMobileLayout ? 0.65 : 0.75,
+                px: dialogMobileLayout ? 0.75 : 1.5,
+                minHeight: dialogMobileLayout ? 36 : undefined,
                 flexShrink: 0,
+                ...(dialogMobileLayout
+                  ? {
+                      flex: '1 1 45%',
+                      minWidth: 0,
+                      maxWidth: 'calc(50% - 4px)',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.2
+                    }
+                  : {}),
                 borderColor: alpha('#fff', 0.14),
                 color: 'grey.200',
                 '&:hover': {
@@ -664,20 +739,29 @@ function App() {
                 }
               })}
             >
-              {forcarNucleoDetalhado ? 'Esconder núcleo' : 'Mostrar núcleo'}
+              {rotuloNucleoDialogo}
             </Button>
             <Button
-              size={dialogMobileLayout ? 'medium' : 'small'}
+              size="small"
               variant="outlined"
               onClick={(e) => setSubniveisAnchor(e.currentTarget)}
               sx={(theme) => ({
                 borderRadius: 2,
                 textTransform: 'none',
                 fontWeight: 600,
-                py: dialogMobileLayout ? 1 : 0.75,
-                px: dialogMobileLayout ? 1.75 : 1.5,
-                minHeight: dialogMobileLayout ? 44 : undefined,
+                py: dialogMobileLayout ? 0.65 : 0.75,
+                px: dialogMobileLayout ? 0.75 : 1.5,
+                minHeight: dialogMobileLayout ? 36 : undefined,
                 flexShrink: 0,
+                ...(dialogMobileLayout
+                  ? {
+                      flex: '1 1 45%',
+                      minWidth: 0,
+                      maxWidth: 'calc(50% - 4px)',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.2
+                    }
+                  : {}),
                 borderColor: alpha('#fff', 0.14),
                 color: 'grey.200',
                 '&:hover': {
@@ -686,23 +770,28 @@ function App() {
                 }
               })}
             >
-              Subníveis ▾
+              {dialogMobileLayout ? 'Subníveis' : 'Subníveis ▾'}
             </Button>
             {dialogMobileLayout && (
               <Button
-                size="medium"
+                size="small"
                 variant={modoRealidadeAumentada ? 'contained' : 'outlined'}
                 color={modoRealidadeAumentada ? 'secondary' : 'inherit'}
-                startIcon={<VideocamIcon />}
+                startIcon={dialogMobileEstreito ? undefined : <VideocamIcon fontSize="small" />}
                 onClick={() => setModoRealidadeAumentada((v) => !v)}
                 sx={(theme) => ({
                   borderRadius: 2,
                   textTransform: 'none',
                   fontWeight: 600,
-                  py: 1,
-                  px: 1.75,
-                  minHeight: 44,
+                  py: 0.65,
+                  px: 0.75,
+                  minHeight: 36,
                   flexShrink: 0,
+                  flex: '1 1 45%',
+                  minWidth: 0,
+                  maxWidth: 'calc(50% - 4px)',
+                  fontSize: '0.75rem',
+                  lineHeight: 1.2,
                   borderColor: alpha('#fff', 0.14),
                   color: modoRealidadeAumentada ? undefined : 'grey.200',
                   '&:hover': {
@@ -711,7 +800,7 @@ function App() {
                   }
                 })}
               >
-                {modoRealidadeAumentada ? 'RA ligado' : 'Câmera RA'}
+                {rotuloRaDialogo}
               </Button>
             )}
             <Menu
@@ -773,7 +862,7 @@ function App() {
                 inset: 0,
                 pointerEvents: 'none',
                 zIndex: 2,
-                boxShadow: `inset 0 0 80px ${alpha('#000', modoRealidadeAumentada && dialogMobileLayout ? 0.25 : 0.45)}`,
+                boxShadow: `inset 0 0 ${modoRealidadeAumentada && dialogMobileLayout ? 120 : 80}px ${alpha('#000', modoRealidadeAumentada && dialogMobileLayout ? 0.5 : 0.45)}`,
                 borderRadius: 0
               }
             })}
@@ -797,10 +886,22 @@ function App() {
                 }}
               />
             )}
+            {dialogMobileLayout && modoRealidadeAumentada && (
+              <Box
+                aria-hidden
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                  background: `radial-gradient(ellipse 72% 64% at 50% 42%, ${alpha('#000', 0)} 0%, ${alpha('#000', 0.5)} 100%), linear-gradient(180deg, ${alpha('#000', 0.2)} 0%, transparent 38%, transparent 62%, ${alpha('#000', 0.38)} 100%)`
+                }}
+              />
+            )}
             <Box
               sx={{
                 position: 'relative',
-                zIndex: 1,
+                zIndex: 2,
                 width: '100%',
                 height: '100%'
               }}
@@ -820,13 +921,16 @@ function App() {
         </DialogContent>
         <DialogActions
           sx={(theme) => ({
-            px: { xs: 1.5, sm: 2.5 },
-            py: { xs: 1.5, sm: 2 },
+            px: dialogMobileLayout ? 1.25 : { xs: 1.5, sm: 2.5 },
+            py: dialogMobileLayout ? 1 : { xs: 1.5, sm: 2 },
             flexShrink: 0,
+            minHeight: 0,
             borderTop: `1px solid ${alpha('#fff', 0.06)}`,
             bgcolor: alpha('#000', 0.2),
             justifyContent: 'flex-end',
-            pb: { xs: 'max(12px, env(safe-area-inset-bottom, 0px))', sm: 2 },
+            pb: dialogMobileLayout
+              ? 'max(8px, env(safe-area-inset-bottom, 0px))'
+              : { xs: 'max(12px, env(safe-area-inset-bottom, 0px))', sm: 2 },
             gap: 1
           })}
         >
@@ -834,15 +938,16 @@ function App() {
             onClick={handleFecharDialog}
             variant="contained"
             color="primary"
-            size={dialogMobileLayout ? 'large' : 'medium'}
+            size="medium"
             fullWidth={dialogMobileLayout}
             sx={(theme) => ({
               borderRadius: 2,
               textTransform: 'none',
               fontWeight: 600,
-              px: dialogMobileLayout ? 2 : 2.5,
-              py: dialogMobileLayout ? 1.25 : 1,
-              minHeight: dialogMobileLayout ? 48 : undefined,
+              px: dialogMobileLayout ? 1.5 : 2.5,
+              py: dialogMobileLayout ? 0.85 : 1,
+              minHeight: dialogMobileLayout ? 40 : undefined,
+              maxHeight: dialogMobileLayout ? 44 : undefined,
               boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.35)}`
             })}
           >
