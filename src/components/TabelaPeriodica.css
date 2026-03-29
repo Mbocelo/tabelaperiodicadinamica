@@ -12,16 +12,74 @@
   position: relative;
 }
 
-.periodic-table-portrait-hint {
-  display: none;
-  margin: 0 20px 12px;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.65);
-  line-height: 1.35;
-}
-
 .periodic-table-responsive {
   width: 100%;
+}
+
+/* Pedido de rotação — visível só em telemóvel/tablet em retrato (ver media query) */
+.rotate-device-prompt {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(24px, 6vw, 48px) 20px;
+  min-height: min(70dvh, 560px);
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+.rotate-device-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 8px 24px rgba(99, 102, 241, 0.35));
+}
+
+.rotate-device-phone-svg {
+  width: min(100px, 28vw);
+  height: auto;
+  display: block;
+  animation: rotate-device-tilt 2.8s ease-in-out infinite;
+}
+
+@keyframes rotate-device-tilt {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  35% {
+    transform: rotate(-90deg);
+  }
+  50% {
+    transform: rotate(-90deg);
+  }
+  85% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotate-device-phone-svg {
+    animation: none;
+  }
+}
+
+.rotate-device-heading {
+  margin: 0;
+  font-size: clamp(1.1rem, 4vw, 1.35rem);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.02em;
+}
+
+.rotate-device-text {
+  margin: 0;
+  max-width: 22rem;
+  font-size: clamp(0.85rem, 3.2vw, 1rem);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .periodic-table-main {
@@ -281,72 +339,25 @@
   }
 }
 
-/* Telemóvel / tablet em retrato: girar bloco da tabela para usar o eixo longo do ecrã */
+/*
+ * Telemóvel / tablet em retrato: não mostrar a tabela — apenas pedido para girar para paisagem.
+ */
 @media (max-width: 1024px) and (orientation: portrait) {
-  .periodic-table-portrait-hint {
-    display: block;
-  }
-
   .periodic-table-container {
     --periodic-cell-min: 30px;
     max-width: none;
     padding: 12px;
   }
 
-  .periodic-table-container .table-title {
-    font-size: 0.95rem;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 12px;
+  .periodic-table-main .table-title {
+    display: none;
+  }
+
+  .rotate-device-prompt {
+    display: flex;
   }
 
   .periodic-table-responsive {
-    position: relative;
-    width: 100%;
-    height: min(calc(100dvh - 200px), calc(100vw * 2.2));
-    min-height: min(85vw, 720px);
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 4px 0;
-  }
-
-  .periodic-table-rotate-inner {
-    flex: 0 0 auto;
-    width: min(calc(100vh - 96px), 1280px);
-    max-height: none;
-    transform: rotate(-90deg);
-    transform-origin: center center;
-    margin: auto;
-    padding-bottom: 8px;
-  }
-
-  .periodic-table {
-    margin-left: 12px;
-    max-width: calc(100% - 24px);
-  }
-
-  .legend {
-    margin-left: 12px;
-    max-width: calc(100% - 24px);
-    padding: 12px;
-  }
-
-  .element-number {
-    font-size: clamp(8px, 1.35vmin, 11px);
-  }
-
-  .element-symbol-table {
-    font-size: clamp(10px, 2.6vmin, 16px);
-  }
-
-  .element-name-table {
-    font-size: clamp(5px, 1.25vmin, 8px);
-  }
-
-  .periodic-table-container.has-element-info .table-title {
-    margin-top: 8px;
+    display: none !important;
   }
 }
