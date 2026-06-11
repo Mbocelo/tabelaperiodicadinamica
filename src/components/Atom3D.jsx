@@ -8,7 +8,7 @@ import {
 
 const ZOOM_THRESHOLD_NUCLEUS = 220;
 /** Câmera mais afastada ao abrir (z maior = campo mais largo / zoom mais “baixo”) */
-const CAMERA_Z_INICIAL = 520;
+export const CAMERA_Z_INICIAL = 520;
 /** Sombra no plano horizontal (modo realidade aumentada) — abaixo das órbitas mais externas */
 const AR_SHADOW_RADIUS = 285;
 const AR_SHADOW_Y = -305;
@@ -172,8 +172,17 @@ function configurarIluminacao(scene) {
   scene.add(luzNucleo);
 }
 
-const CAMERA_Z_MIN = 60;
-const CAMERA_Z_MAX = 1000;
+export const CAMERA_Z_MIN = 60;
+export const CAMERA_Z_MAX = 1000;
+
+/** Converte distância da câmera (0 = longe, 100 = perto) para valor do slider vertical */
+export function cameraZParaSlider(z) {
+  return ((CAMERA_Z_MAX - z) / (CAMERA_Z_MAX - CAMERA_Z_MIN)) * 100;
+}
+
+export function sliderParaCameraZ(valorSlider) {
+  return CAMERA_Z_MAX - (valorSlider / 100) * (CAMERA_Z_MAX - CAMERA_Z_MIN);
+}
 
 function distanciaPinça(pointersMap) {
   if (pointersMap.size < 2) return 0;
@@ -485,7 +494,9 @@ export default function Atom3D({
   /** Fundo transparente para sobrepor o vídeo da câmera (modo RA em celular) */
   fundoTransparente = false,
   mostrarCoordenadas = true,
-  rotacaoAutomatica = false
+  rotacaoAutomatica = false,
+  zoomCamera,
+  onZoomChange
 }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
@@ -500,9 +511,11 @@ export default function Atom3D({
   const mouseRef = useRef({ isDown: false, x: 0, y: 0, rotX: 0, rotY: 0 });
   const forcarNucleoRef = useRef(forcarNucleoDetalhado);
   const rotacaoAutomaticaRef = useRef(rotacaoAutomatica);
+  const onZoomChangeRef = useRef(onZoomChange);
 
   forcarNucleoRef.current = forcarNucleoDetalhado;
   rotacaoAutomaticaRef.current = rotacaoAutomatica;
+  onZoomChangeRef.current = onZoomChange;
 
   const desenharAtomo = (scene, atomGroup, num, nNeutroes) => {
     if (!atomGroup || !scene) return;
@@ -802,8 +815,13 @@ export default function Atom3D({
     const pointers = new Map();
     let lastPinchDistance = 0;
 
+    const notificarZoom = () => {
+      onZoomChangeRef.current?.(camera.position.z);
+    };
+
     const aplicarLimiteZoom = () => {
       camera.position.z = Math.max(CAMERA_Z_MIN, Math.min(CAMERA_Z_MAX, camera.position.z));
+      notificarZoom();
     };
 
     const handlePointerDown = (e) => {
@@ -1009,6 +1027,15 @@ export default function Atom3D({
     const group = coordenadasGroupRef.current;
     if (group) group.visible = mostrarCoordenadas;
   }, [mostrarCoordenadas]);
+
+  useEffect(() => {
+    const camera = cameraRef.current;
+    if (!camera || zoomCamera == null) return;
+    const z = Math.max(CAMERA_Z_MIN, Math.min(CAMERA_Z_MAX, zoomCamera));
+    if (Math.abs(camera.position.z - z) > 0.5) {
+      camera.position.z = z;
+    }
+  }, [zoomCamera]);
 
   return <div ref={containerRef} id="canvas-container" className="atom3d-container" />;
 }

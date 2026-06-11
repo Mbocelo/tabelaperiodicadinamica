@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  Slider,
   Stack,
   Paper,
   Typography,
@@ -29,7 +30,13 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
-import Atom3D from './components/Atom3D';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import Atom3D, {
+  CAMERA_Z_INICIAL,
+  cameraZParaSlider,
+  sliderParaCameraZ
+} from './components/Atom3D';
 import { AppMenuBar } from './components/AppMenu';
 import TabelaPeriodica from './components/TabelaPeriodica';
 import {
@@ -434,6 +441,7 @@ function App() {
   const [paginaInfo, setPaginaInfo] = useState(null);
   /** Câmera ao fundo do átomo (estilo RA) — só em telas abaixo do breakpoint md */
   const [modoRealidadeAumentada, setModoRealidadeAumentada] = useState(false);
+  const [zoomCamera, setZoomCamera] = useState(CAMERA_Z_INICIAL);
   const videoCameraRef = useRef(null);
   const streamCameraRef = useRef(null);
 
@@ -445,6 +453,8 @@ function App() {
     if (!dialogAberto) {
       setModoRealidadeAumentada(false);
       setRotacaoAutomatica(false);
+    } else {
+      setZoomCamera(CAMERA_Z_INICIAL);
     }
   }, [dialogAberto]);
 
@@ -953,56 +963,114 @@ function App() {
               height: dialogMobileLayout ? undefined : { xs: 420, sm: 500 },
               bgcolor: modoRealidadeAumentada && dialogMobileLayout ? '#000' : '#050608',
               position: 'relative',
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                inset: 0,
-                pointerEvents: 'none',
-                zIndex: 2,
-                boxShadow: `inset 0 0 80px ${alpha('#000', modoRealidadeAumentada && dialogMobileLayout ? 0.25 : 0.45)}`,
-                borderRadius: 0
-              }
+              display: 'flex',
+              flexDirection: 'row',
+              minWidth: 0
             }}
           >
-            {dialogMobileLayout && (
-              <video
-                ref={videoCameraRef}
-                autoPlay
-                muted
-                playsInline
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  zIndex: 0,
-                  display: modoRealidadeAumentada ? 'block' : 'none',
-                  pointerEvents: 'none',
-                  backgroundColor: '#000'
-                }}
-              />
-            )}
             <Box
               sx={{
+                flex: 1,
                 position: 'relative',
-                zIndex: 1,
-                width: '100%',
-                height: '100%'
+                minWidth: 0,
+                minHeight: 0,
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  zIndex: 2,
+                  boxShadow: `inset 0 0 80px ${alpha('#000', modoRealidadeAumentada && dialogMobileLayout ? 0.25 : 0.45)}`,
+                  borderRadius: 0
+                }
               }}
             >
-              {dialogAberto && (
-                <Atom3D
-                  numeroAtomico={numeroAtomico}
-                  neutroes={elemento?.neutroes}
-                  mostrarEletrons={mostrarEletrons}
-                  mostrarCoordenadas={mostrarCoordenadas}
-                  rotacaoAutomatica={rotacaoAutomatica}
-                  forcarNucleoDetalhado={forcarNucleoDetalhado}
-                  subniveisVisiveis={subniveisVisiveis}
-                  fundoTransparente={Boolean(dialogMobileLayout && modoRealidadeAumentada)}
+              {dialogMobileLayout && (
+                <video
+                  ref={videoCameraRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    zIndex: 0,
+                    display: modoRealidadeAumentada ? 'block' : 'none',
+                    pointerEvents: 'none',
+                    backgroundColor: '#000'
+                  }}
                 />
               )}
+              <Box
+                sx={{
+                  position: 'relative',
+                  zIndex: 1,
+                  width: '100%',
+                  height: '100%'
+                }}
+              >
+                {dialogAberto && (
+                  <Atom3D
+                    numeroAtomico={numeroAtomico}
+                    neutroes={elemento?.neutroes}
+                    mostrarEletrons={mostrarEletrons}
+                    mostrarCoordenadas={mostrarCoordenadas}
+                    rotacaoAutomatica={rotacaoAutomatica}
+                    forcarNucleoDetalhado={forcarNucleoDetalhado}
+                    subniveisVisiveis={subniveisVisiveis}
+                    fundoTransparente={Boolean(dialogMobileLayout && modoRealidadeAumentada)}
+                    zoomCamera={zoomCamera}
+                    onZoomChange={setZoomCamera}
+                  />
+                )}
+              </Box>
+            </Box>
+            <Box
+              component="aside"
+              aria-label="Controlo de zoom"
+              sx={{
+                flexShrink: 0,
+                width: { xs: 48, sm: 56 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1,
+                py: 2,
+                px: 0.75,
+                borderLeft: `1px solid ${alpha('#fff', 0.08)}`,
+                bgcolor: alpha('#000', 0.35),
+                zIndex: 3
+              }}
+            >
+              <ZoomInIcon sx={{ fontSize: { xs: 18, sm: 20 }, color: 'grey.400' }} aria-hidden />
+              <Slider
+                orientation="vertical"
+                value={cameraZParaSlider(zoomCamera)}
+                onChange={(_, valor) => setZoomCamera(sliderParaCameraZ(valor))}
+                min={0}
+                max={100}
+                step={1}
+                aria-label="Zoom do modelo 3D"
+                sx={{
+                  flex: '1 1 auto',
+                  minHeight: { xs: 100, sm: 140 },
+                  maxHeight: 'min(55vh, 320px)',
+                  color: 'primary.main',
+                  '& .MuiSlider-thumb': {
+                    width: { xs: 16, sm: 18 },
+                    height: { xs: 16, sm: 18 }
+                  },
+                  '& .MuiSlider-rail': {
+                    opacity: 0.35,
+                    bgcolor: 'grey.600'
+                  }
+                }}
+              />
+              <ZoomOutIcon sx={{ fontSize: { xs: 18, sm: 20 }, color: 'grey.400' }} aria-hidden />
             </Box>
           </Box>
         </DialogContent>
