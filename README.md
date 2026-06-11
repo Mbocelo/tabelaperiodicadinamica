@@ -1,145 +1,123 @@
-# Tabela Periódica Dinâmica — Manual do Professor
+# Tabela Periódica Dinâmica
 
-## Modelo Atômico 3D Interativo
+Aplicativo educacional interativo para estudo da Tabela Periódica e visualização de modelo atômico 3D com orbitais por subnível.
 
-Este aplicativo é uma ferramenta educacional para auxiliar no ensino de Química, permitindo a exploração visual da tabela periódica e do modelo atômico em três dimensões, com configuração eletrônica por subníveis (s, p, d, f).
+📖 **Documentação completa:** [docs/GUIA_COMPLETO.md](docs/GUIA_COMPLETO.md) — guia de utilização, stack tecnológica, arquitetura, dados químicos e desenvolvimento.
 
----
+## Funcionalidades
+
+### Tabela periódica interativa
+- Exibe os **118 elementos**, incluindo séries de **lantanídeos** e **actinídeos**.
+- Células coloridas por **categoria química** (metais, halogênios, gases nobres etc.).
+- Seleção de elemento com destaque visual.
+- Legenda de categorias e linhas dedicadas para lantanídeos/actinídeos.
+
+### Painel de informações do elemento
+- Mostra: símbolo, nome, número atômico, nêutrons, massa atômica, raio atômico e categoria.
+- Exibe a **configuração eletrônica** formatada.
+- Inclui legenda de cores para subníveis (**s, p, d, f**).
+- Campo de entrada para alterar o número atômico manualmente.
+- Botão para abrir o **modelo 3D** do elemento selecionado.
+
+### Modelo atômico 3D (Three.js)
+- Núcleo em dois modos:
+  - **Simples** (esfera única) quando distante.
+  - **Detalhado** (prótons e nêutrons animados) quando aproximado ou forçado por botão.
+- Orbitais e elétrons distribuídos por subnível com animação contínua.
+- Elétrons, prótons e nêutrons renderizados como **esferas lisas** com o mesmo tipo de material e iluminação.
+- Formas orbitais:
+  - `s`: esférico
+  - `p`: halteres em eixos principais
+  - `d`: distribuição lobular simplificada
+  - `f`: distribuição multi-lobular simplificada
+- **Iluminação em camadas** (hemisférica, principal, preenchimento, contorno e luz no núcleo) para dar profundidade e volume ao modelo.
+- O átomo inicia **parado**; a rotação é opcional e controlada pelo utilizador.
+
+### Sistema de coordenadas 3D
+- Eixos **X, Y e Z** com extensão positiva e negativa a partir da origem.
+- Etiquetas nos seis extremos: `+X`, `−X`, `+Y`, `−Y`, `+Z`, `−Z`.
+- Grelha de referência no plano horizontal.
+- As coordenadas **rodam com o modelo** (mesmo grupo de transformação do átomo).
+- Podem ser ocultadas ou exibidas pelo botão dedicado no visualizador.
+
+### Controles no visualizador 3D
+- **Ocultar/Mostrar elétrons**.
+- **Mostrar/Esconder núcleo** detalhado.
+- **Rotação automática** / **Parar rotação** (desligada por padrão ao abrir o diálogo).
+- **Mostrar/Ocultar coordenadas** (eixos e grelha).
+- Menu **Subníveis** com checkboxes para ligar/desligar `s`, `p`, `d`, `f`:
+  - Afeta **órbitais e elétrons** — só aparecem partículas dos subníveis selecionados.
+- Interação por ponteiro:
+  - Arrastar para rotacionar manualmente.
+  - Scroll/pinch para zoom.
+
+### Modo RA em celular (câmera)
+- Disponível no diálogo 3D em telas móveis.
+- Ativa vídeo da câmera traseira como fundo do modelo.
+- O átomo é renderizado com fundo transparente sobre a câmera.
+- Inclui **sombra de contato do átomo** (fixa na cena) para melhor percepção espacial.
+
+### Menu superior e páginas informativas
+- Barra com menu lateral (Drawer) contendo:
+  - Manual de uso
+  - Termos de uso
+  - Política de privacidade
+  - Sobre
+- Conteúdo aberto em diálogo próprio dentro do app.
+
+### Responsividade
+- Layout adaptado para desktop, tablet e celular.
+- Em telas grandes, painel de elemento fica em área lateral fixa.
+- Em telas pequenas, informações do elemento são exibidas em Drawer inferior.
+- Diálogo 3D em ecrã completo em telemóvel e tablet.
+- A tabela em retrato móvel funciona no fluxo normal, com **scroll horizontal** quando necessário (sem exigir rotação do aparelho).
+- Células da tabela ajustadas para melhor leitura no celular.
+
+### Regras eletrônicas
+- Construção eletrônica baseada na regra de Aufbau.
+- Inclui principais exceções conhecidas (como Cr, Cu, Ag, Au, entre outras).
+
+## Estrutura do projeto
+
+```
+src/
+├── main.jsx                 # Entrada React + tema MUI (escuro)
+├── App.jsx                  # Orquestração: tabela, painel, diálogo 3D
+├── components/
+│   ├── TabelaPeriodica.jsx  # Grelha periódica e legenda
+│   ├── Atom3D.jsx           # Visualização Three.js
+│   └── AppMenu.jsx          # Menu lateral e páginas informativas
+├── data/
+│   └── elementosQuimicos.js # Dados dos 118 elementos e lógica Aufbau
+└── content/
+    └── appInfoPt.js         # Textos de ajuda e legais (PT)
+```
 
 ## Instalação e execução
 
 ### Pré-requisitos
-- Node.js (versão 16 ou superior)
-- npm ou yarn
+- Node.js 16+
+- npm
 
 ### Comandos
 
 ```bash
-# Instalar dependências
 npm install
-
-# Executar em modo de desenvolvimento
 npm run dev
-
-# Gerar versão para produção
 npm run build
-
-# Visualizar a versão de produção localmente
 npm run preview
+npm run lint
 ```
 
-Após executar `npm run dev`, abra o navegador em `http://localhost:5173` (ou a URL indicada no terminal).
+Depois de `npm run dev`, abra a URL exibida no terminal (normalmente `http://localhost:5173`).
 
----
+## Tecnologias
 
-## Interface principal
+- React 18
+- Vite
+- Material UI (MUI)
+- Three.js
 
-### 1. Tabela periódica
-- A tabela exibe os **118 elementos químicos**, incluindo lantanídeos e actinídeos.
-- As cores indicam o **tipo de elemento** (metal alcalino, metal de transição, halogênio, gás nobre, etc.).
-- A **legenda** na parte inferior explica cada categoria.
-- O elemento selecionado aparece com borda amarela/verde em destaque.
+## Recomendação de uso
 
-### 2. Painel de informações do elemento
-Ao clicar em um elemento, surge um painel à esquerda com:
-- **Símbolo e nome** do elemento
-- **Número atômico** e **número de nêutrons** (isótopo mais estável)
-- **Massa atômica** (u) e **raio atômico** (pm)
-- **Tipo/categoria** do elemento
-- **Configuração eletrônica** completa (ex.: 1s² 2s² 2p² para carbono)
-- **Legenda de subníveis** (s, p, d, f) com cores correspondentes
-- Campo para alterar o número atômico e botão **3D** para abrir o modelo atômico
-
----
-
-## Modelo atômico 3D
-
-### Como abrir
-- Clique em um elemento na tabela e, em seguida, no botão **3D** no painel de informações,  
-**ou**
-- Digite o número atômico (1 a 118) e clique em **3D**.
-
-### Representação visual
-
-#### Núcleo
-- **Zoom distante:** núcleo representado como uma única esfera cinza.
-- **Zoom próximo** (scroll para perto ou botão “Mostrar Núcleo”):
-  - **Prótons** em vermelho
-  - **Nêutrons** em cinza
-  - Partículas animadas simulando o movimento dentro do núcleo.
-
-#### Elétrons e orbitais
-- Os elétrons são distribuídos por **subníveis** (s, p, d, f), de acordo com a regra de Aufbau.
-- Cores por subnível:
-  - **s:** verde (#00ff88)
-  - **p:** azul (#4488ff)
-  - **d:** amarelo (#ffcc00)
-  - **f:** rosa (#ff44aa)
-- Formas dos orbitais:
-  - **s:** esfera
-  - **p:** halteres nos eixos x, y e z
-  - **d:** cinco orbitais com lobos em diferentes orientações
-  - **f:** oito lobos em arranjo cúbico simplificado
-- Os elétrons animam-se em órbitas com efeito de transição (“teleporte”) entre posições, representando o caráter probabilístico do modelo quântico.
-
----
-
-## Controles do modelo 3D
-
-Na barra de ferramentas acima do canvas 3D:
-
-| Controle | Função |
-|----------|--------|
-| **Ocultar / Mostrar Elétrons** | Esconde ou exibe os elétrons, mantendo apenas os orbitais (útil para focar na geometria). |
-| **Mostrar / Esconder Núcleo** | Alterna entre núcleo simples (esfera) e núcleo detalhado (prótons e nêutrons individuais), independente do zoom. |
-| **Subníveis ▾** | Menu com checkboxes para exibir ou ocultar cada tipo de subnível (s, p, d, f). Permite destacar apenas os orbitais desejados. |
-
-### Interação com o modelo
-- **Arrastar com o mouse:** rotacionar o átomo
-- **Scroll (roda do mouse):** zoom para perto ou para longe (para ver o núcleo detalhado, aproxime bastante)
-- **Rotação automática:** o modelo gira lentamente por padrão
-
----
-
-## Exceções à regra de Aufbau
-
-O simulador considera as principais **exceções à regra de Aufbau**, como:
-- Cromo (Cr), Cobre (Cu), Paládio (Pd), Prata (Ag)
-- Lantânio (La), Cério (Ce), Gadolínio (Gd)
-- Platina (Pt), Ouro (Au)
-- Actínio (Ac), Tório (Th), Protactínio (Pa), Urânio (U), Neptúnio (Np), Cúrio (Cm)
-
-A configuração eletrônica exibida corresponde a essas exceções.
-
----
-
-## Sugestões de uso pedagógico
-
-1. **Introdução à estrutura eletrônica:** usar elementos simples (H, He, C) para explicar camadas e subníveis.
-2. **Regra de Aufbau:** comparar carbono (6) e oxigênio (8) e discutir o preenchimento de 2p.
-3. **Elementos de transição:** elementos como Fe (26) ou Cu (29) permitem trabalhar orbitais d e exceções.
-4. **Lantanídeos e actinídeos:** usar o menu de subníveis para destacar orbitais f.
-5. **Núcleo atômico:** aproximar o zoom ou usar “Mostrar Núcleo” para discutir prótons, nêutrons e isótopos.
-6. **Tabela periódica:** explorar as cores das categorias e a relação com a configuração eletrônica.
-7. **Projeção em sala:** usar em datashow ou tela compartilhada para explicações ao vivo.
-
----
-
-## Requisitos técnicos
-
-- Navegador moderno (Chrome, Firefox, Edge, Safari)
-- JavaScript habilitado
-- Resolução mínima sugerida: 1024×768
-- Para performance ideal em dispositivos mais antigos, considere ocultar elétrons ou alguns subníveis quando o modelo estiver pesado.
-
----
-
-## Tecnologias utilizadas
-
-- **React** + **Vite** — interface
-- **Material UI** — componentes visuais
-- **Three.js** — renderização 3D
-
----
-
-*Desenvolvido para fins educacionais. Dados baseados em referências científicas consolidadas.*
+Para dispositivos mais modestos, caso o 3D fique pesado, reduza elementos visuais no visualizador (por exemplo, ocultando elétrons, coordenadas ou subníveis não necessários para o estudo).

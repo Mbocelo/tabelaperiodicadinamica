@@ -145,6 +145,21 @@ export const AUFBAU_ORDER = [
 export const SUBLEVEL_CAPACITY = { s: 2, p: 6, d: 10, f: 14 };
 export const SUBLEVEL_COLORS = { s: 0x00ff88, p: 0x4488ff, d: 0xffcc00, f: 0xff44aa };
 export const SUBLEVEL_COLORS_HEX = { s: '#00ff88', p: '#4488ff', d: '#ffcc00', f: '#ff44aa' };
+/** Cores distintas para subníveis f por camada principal (lantanídeos vs actinídeos) */
+export const SUBLEVEL_SHELL_COLORS = { '4f': 0xff44aa, '5f': 0xff7722 };
+export const SUBLEVEL_SHELL_COLORS_HEX = { '4f': '#ff44aa', '5f': '#ff7722' };
+
+export function obterCorSubnivel(sub) {
+  if (SUBLEVEL_SHELL_COLORS[sub] !== undefined) return SUBLEVEL_SHELL_COLORS[sub];
+  const tipo = sub.charAt(sub.length - 1);
+  return SUBLEVEL_COLORS[tipo];
+}
+
+export function obterCorSubnivelHex(sub) {
+  if (SUBLEVEL_SHELL_COLORS_HEX[sub] !== undefined) return SUBLEVEL_SHELL_COLORS_HEX[sub];
+  const tipo = sub.charAt(sub.length - 1);
+  return SUBLEVEL_COLORS_HEX[tipo];
+}
 
 // Exceções à regra de Aufbau
 export const CONFIG_EXCEPCIONAIS = {

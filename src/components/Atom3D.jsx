@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   obterConfiguracaoEletronica,
   AUFBAU_ORDER,
-  SUBLEVEL_COLORS
+  obterCorSubnivel
 } from '../data/elementosQuimicos';
 
 const ZOOM_THRESHOLD_NUCLEUS = 220;
@@ -13,6 +13,14 @@ const CAMERA_Z_INICIAL = 520;
 const AR_SHADOW_RADIUS = 285;
 const AR_SHADOW_Y = -305;
 const AR_SHADOW_NAME = 'ar-atom-ground-shadow';
+const COORDINATES_GROUP_NAME = 'atom-coordinates';
+/** Comprimento dos eixos X, Y e Z (unidades da cena) */
+const AXES_SIZE = 300;
+const GRID_SIZE = 620;
+const GRID_DIVISIONS = 31;
+const GRID_Y = -280;
+const AXIS_LABEL_OFFSET = 22;
+const AXIS_LABEL_SCALE = 42;
 
 /** Textura radial suave para sombra estilo “contact shadow” sobre o vídeo da câmera */
 function criarTexturaSombraRadial(size = 256) {
@@ -32,6 +40,138 @@ function criarTexturaSombraRadial(size = 256) {
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
+
+function criarLinhaEixo(cor, inicio, fim) {
+  const geo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(...inicio),
+    new THREE.Vector3(...fim)
+  ]);
+  const mat = new THREE.LineBasicMaterial({ color: cor, transparent: true, opacity: 0.9 });
+  return new THREE.Line(geo, mat);
+}
+
+/** Etiqueta em sprite no extremo de cada eixo (+/− X, Y, Z) */
+function criarEtiquetaEixo(texto, cor) {
+  const canvas = document.createElement('canvas');
+  const size = 64;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = cor;
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(texto, size / 2, size / 2);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    transparent: true,
+    depthTest: true,
+    toneMapped: false
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(AXIS_LABEL_SCALE, AXIS_LABEL_SCALE, 1);
+  sprite.userData = { isAxisLabel: true, labelTexture: tex };
+  return sprite;
+}
+
+function criarGrupoCoordenadas() {
+  const group = new THREE.Group();
+  group.name = COORDINATES_GROUP_NAME;
+
+  const eixosLinhas = [
+    { cor: 0xff5555, inicio: [-AXES_SIZE, 0, 0], fim: [AXES_SIZE, 0, 0] },
+    { cor: 0x55ff55, inicio: [0, -AXES_SIZE, 0], fim: [0, AXES_SIZE, 0] },
+    { cor: 0x5599ff, inicio: [0, 0, -AXES_SIZE], fim: [0, 0, AXES_SIZE] }
+  ];
+  for (const { cor, inicio, fim } of eixosLinhas) {
+    const linha = criarLinhaEixo(cor, inicio, fim);
+    linha.renderOrder = 1;
+    group.add(linha);
+  }
+
+  const grid = new THREE.GridHelper(GRID_SIZE, GRID_DIVISIONS, 0x5a6a7a, 0x2a3540);
+  grid.position.y = GRID_Y;
+  const gridMaterials = Array.isArray(grid.material) ? grid.material : [grid.material];
+  gridMaterials.forEach((mat) => {
+    mat.transparent = true;
+    mat.opacity = 0.45;
+  });
+  grid.renderOrder = 0;
+  group.add(grid);
+
+  const extremo = AXES_SIZE + AXIS_LABEL_OFFSET;
+  const etiquetas = [
+    { texto: '+X', cor: '#ff5555', pos: [extremo, 0, 0] },
+    { texto: '−X', cor: '#ff5555', pos: [-extremo, 0, 0] },
+    { texto: '+Y', cor: '#55ff55', pos: [0, extremo, 0] },
+    { texto: '−Y', cor: '#55ff55', pos: [0, -extremo, 0] },
+    { texto: '+Z', cor: '#5599ff', pos: [0, 0, extremo] },
+    { texto: '−Z', cor: '#5599ff', pos: [0, 0, -extremo] }
+  ];
+  for (const { texto, cor, pos } of etiquetas) {
+    const label = criarEtiquetaEixo(texto, cor);
+    label.position.set(pos[0], pos[1], pos[2]);
+    group.add(label);
+  }
+
+  return group;
+}
+
+const ROTACAO_AUTOMATICA_VELOCIDADE = 0.005;
+const RAIO_ELETRON = 3;
+/** Mesma suavidade das esferas do núcleo detalhado (prótons/nêutrons) */
+const ESFERA_SEGMENTOS = 32;
+
+function corEmissiva(cor, fator = 0.55) {
+  const r = Math.floor(((cor >> 16) & 0xff) * fator);
+  const g = Math.floor(((cor >> 8) & 0xff) * fator);
+  const b = Math.floor((cor & 0xff) * fator);
+  return (r << 16) | (g << 8) | b;
+}
+
+/** Material esférico partilhado por prótons, nêutrons e elétrons */
+function criarMaterialEsfera(cor, emissiveIntensity = 0.15, shininess = 30) {
+  return new THREE.MeshPhongMaterial({
+    color: cor,
+    emissive: corEmissiva(cor),
+    emissiveIntensity,
+    specular: 0xffffff,
+    shininess
+  });
+}
+
+/** Iluminação em camadas para dar volume ao átomo (luz fixa na cena, modelo roda sob ela) */
+function configurarIluminacao(scene) {
+  scene.add(new THREE.HemisphereLight(0xc8daf0, 0x12151c, 0.42));
+
+  const luzPrincipal = new THREE.DirectionalLight(0xfff8f0, 1.4);
+  luzPrincipal.position.set(150, 220, 170);
+  scene.add(luzPrincipal);
+
+  const luzPreenchimento = new THREE.DirectionalLight(0x8aa0c8, 0.55);
+  luzPreenchimento.position.set(-170, 70, -130);
+  scene.add(luzPreenchimento);
+
+  const luzContorno = new THREE.DirectionalLight(0xb0c8ff, 0.8);
+  luzContorno.position.set(-110, 90, -240);
+  scene.add(luzContorno);
+
+  const luzInferior = new THREE.DirectionalLight(0x4a5568, 0.28);
+  luzInferior.position.set(40, -220, 100);
+  scene.add(luzInferior);
+
+  scene.add(new THREE.AmbientLight(0x353545, 0.16));
+
+  const luzNucleo = new THREE.PointLight(0xff5577, 1.0, 520, 1.4);
+  luzNucleo.position.set(0, 0, 0);
+  scene.add(luzNucleo);
+}
+
 const CAMERA_Z_MIN = 60;
 const CAMERA_Z_MAX = 1000;
 
@@ -41,12 +181,190 @@ function distanciaPinça(pointersMap) {
   return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
 }
 
+function normalizarVetor(v) {
+  const len = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / len, v[1] / len, v[2] / len];
+}
+
+/** Fase positiva = cor do subnível; fase negativa = tom azul (como nos diagramas de química) */
+function corFaseLobo(corBase, fase) {
+  if (fase >= 0) return corBase;
+  const r = (corBase >> 16) & 0xff;
+  const g = (corBase >> 8) & 0xff;
+  const b = corBase & 0xff;
+  const mix = (c, alvo) => Math.round(c * 0.32 + alvo * 0.68);
+  return (mix(r, 0x55) << 16) | (mix(g, 0xaa) << 8) | mix(b, 0xff);
+}
+
+function criarMaterialLoboF(corBase, fase, opacidade = 0.32) {
+  const cor = corFaseLobo(corBase, fase);
+  return new THREE.MeshPhongMaterial({
+    color: cor,
+    emissive: cor,
+    emissiveIntensity: fase >= 0 ? 0.1 : 0.07,
+    specular: 0xffffff,
+    shininess: 48,
+    transparent: true,
+    opacity: opacidade,
+    side: THREE.DoubleSide
+  });
+}
+
+function lobosHexagonaisPlano(rotacaoGraus = 0) {
+  return Array.from({ length: 6 }, (_, i) => {
+    const theta = ((i * 60 + rotacaoGraus) * Math.PI) / 180;
+    return {
+      dir: normalizarVetor([Math.cos(theta), Math.sin(theta), 0]),
+      fase: i % 2 === 0 ? 1 : -1,
+      escala: [1.15, 1.15, 0.72]
+    };
+  });
+}
+
+function lobosOitoOctantes() {
+  const lobos = [];
+  for (const sx of [-1, 1]) {
+    for (const sy of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        lobos.push({
+          dir: normalizarVetor([sx, sy, sz]),
+          fase: sx * sy * sz > 0 ? 1 : -1,
+          escala: [1, 1, 1]
+        });
+      }
+    }
+  }
+  return lobos;
+}
+
+function lobosOitoEntreEixos() {
+  const dirs = [
+    [1, 1, 0], [-1, 1, 0], [1, -1, 0], [-1, -1, 0],
+    [1, 0, 1], [-1, 0, 1], [1, 0, -1], [-1, 0, -1]
+  ];
+  return dirs.map((d, i) => ({
+    dir: normalizarVetor(d),
+    fase: i % 2 === 0 ? 1 : -1,
+    escala: [1, 1, 1]
+  }));
+}
+
+function lobosOitoPlanoXZ() {
+  const dirs = [
+    [1, 0.22, 0.92], [-1, 0.22, 0.92], [1, 0.22, -0.92], [-1, 0.22, -0.92],
+    [0.92, 0.22, 1], [-0.92, 0.22, 1], [0.92, 0.22, -1], [-0.92, 0.22, -1]
+  ];
+  return dirs.map((d, i) => ({
+    dir: normalizarVetor(d),
+    fase: i % 2 === 0 ? 1 : -1,
+    escala: [1.05, 0.85, 1.05]
+  }));
+}
+
+function lobosOitoPlanoYZ() {
+  const dirs = [
+    [0.22, 1, 0.92], [0.22, -1, 0.92], [0.22, 1, -0.92], [0.22, -1, -0.92],
+    [0.22, 0.92, 1], [0.22, -0.92, 1], [0.22, 0.92, -1], [0.22, -0.92, -1]
+  ];
+  return dirs.map((d, i) => ({
+    dir: normalizarVetor(d),
+    fase: i % 2 === 0 ? 1 : -1,
+    escala: [0.85, 1.05, 1.05]
+  }));
+}
+
+/**
+ * Sete orbitais f com geometria inspirada nos diagramas padrão de química.
+ * Ordem: fx(x²−3y²), fy(x²−z²), fxz², fz³, fyz², fxyz, fy(3x²−y²)
+ */
+function obterDefinicoesOrbitaisF() {
+  return [
+    {
+      id: 'fx(x2-3y2)',
+      lobos: lobosHexagonaisPlano(0),
+      sitiosEletron: [[1, 0, 0], [-1, 0, 0]]
+    },
+    {
+      id: 'fy(x2-z2)',
+      lobos: lobosOitoEntreEixos(),
+      sitiosEletron: [normalizarVetor([1, 1, 0]), normalizarVetor([-1, -1, 0])]
+    },
+    {
+      id: 'fxz2',
+      lobos: lobosOitoPlanoXZ(),
+      sitiosEletron: [normalizarVetor([1, 0, 1]), normalizarVetor([-1, 0, -1])]
+    },
+    {
+      id: 'fz3',
+      lobos: [
+        { dir: [0, 0, 1], fase: 1, escala: [0.95, 0.95, 1.45] },
+        { dir: [0, 0, -1], fase: -1, escala: [0.95, 0.95, 1.45] }
+      ],
+      aneis: [
+        { fase: -1, z: 0.14 },
+        { fase: 1, z: -0.14 }
+      ],
+      sitiosEletron: [[0, 0, 1], [0, 0, -1]]
+    },
+    {
+      id: 'fyz2',
+      lobos: lobosOitoPlanoYZ(),
+      sitiosEletron: [normalizarVetor([0, 1, 1]), normalizarVetor([0, -1, -1])]
+    },
+    {
+      id: 'fxyz',
+      lobos: lobosOitoOctantes(),
+      sitiosEletron: [normalizarVetor([1, 1, 1]), normalizarVetor([-1, -1, -1])]
+    },
+    {
+      id: 'fy(3x2-y2)',
+      lobos: lobosHexagonaisPlano(30),
+      sitiosEletron: [normalizarVetor([0, 1, 0]), normalizarVetor([0, -1, 0])]
+    }
+  ];
+}
+
+function criarGrupoOrbitaisF(radius, corBase) {
+  const group = new THREE.Group();
+  const dist = radius * 0.58;
+  const raioLobo = radius * 0.17;
+  const lobeGeo = new THREE.SphereGeometry(raioLobo, 16, 16);
+
+  for (const orbital of obterDefinicoesOrbitaisF()) {
+    for (const lobo of orbital.lobos) {
+      const [dx, dy, dz] = lobo.dir;
+      const mesh = new THREE.Mesh(lobeGeo, criarMaterialLoboF(corBase, lobo.fase));
+      mesh.position.set(dx * dist, dy * dist, dz * dist);
+      if (lobo.escala) mesh.scale.set(lobo.escala[0], lobo.escala[1], lobo.escala[2]);
+      group.add(mesh);
+    }
+
+    if (orbital.aneis) {
+      const raioAnel = radius * 0.36;
+      const tubo = radius * 0.07;
+      const torusGeo = new THREE.TorusGeometry(raioAnel, tubo, 14, 32);
+      for (const anel of orbital.aneis) {
+        const mesh = new THREE.Mesh(torusGeo, criarMaterialLoboF(corBase, anel.fase, 0.38));
+        mesh.rotation.x = Math.PI / 2;
+        mesh.position.z = anel.z * radius;
+        group.add(mesh);
+      }
+    }
+  }
+
+  return group;
+}
+
 function criarFormaOrbital(tipo, radius, cor) {
   const group = new THREE.Group();
   const material = new THREE.MeshPhongMaterial({
     color: cor,
+    emissive: cor,
+    emissiveIntensity: 0.07,
+    specular: 0xffffff,
+    shininess: 48,
     transparent: true,
-    opacity: 0.25,
+    opacity: 0.28,
     side: THREE.DoubleSide
   });
   const r = radius * 0.35;
@@ -97,21 +415,9 @@ function criarFormaOrbital(tipo, radius, cor) {
         group.add(m);
       }
     }
-  } else {
-    const dist = radius * 0.55;
-    const lobeGeo = new THREE.SphereGeometry(r * 0.8, 12, 12);
-    const sinais = [1, -1];
-    let count = 0;
-    for (const sx of sinais) {
-      for (const sy of sinais) {
-        for (const sz of sinais) {
-          if (count++ >= 8) break;
-          const m = new THREE.Mesh(lobeGeo, material.clone());
-          m.position.set(sx * dist, sy * dist, sz * dist);
-          group.add(m);
-        }
-      }
-    }
+  } else if (tipo === 'f') {
+    group.add(criarGrupoOrbitaisF(radius, cor));
+    return group;
   }
   return group;
 }
@@ -144,15 +450,12 @@ function obterPosicoesSubnivel(tipo, qtd, radius) {
       const norm = Math.sqrt(o[0] ** 2 + o[1] ** 2 + o[2] ** 2) || 1;
       pos.push([o[0] * r / norm, o[1] * r / norm, o[2] * r / norm]);
     }
-  } else {
+  } else if (tipo === 'f') {
+    const orbitais = obterDefinicoesOrbitaisF();
     for (let i = 0; i < qtd; i++) {
-      const theta = (2 * Math.PI * i) / Math.max(qtd, 1);
-      const phi = Math.acos(2 * (i / Math.max(qtd, 1)) - 1 + 0.01) - Math.PI / 2;
-      pos.push([
-        r * Math.cos(phi) * Math.cos(theta),
-        r * Math.cos(phi) * Math.sin(theta),
-        r * Math.sin(phi)
-      ]);
+      const orbital = orbitais[Math.floor(i / 2) % orbitais.length];
+      const sitio = orbital.sitiosEletron[i % 2];
+      pos.push([sitio[0] * r, sitio[1] * r, sitio[2] * r]);
     }
   }
   return pos;
@@ -180,27 +483,33 @@ export default function Atom3D({
   forcarNucleoDetalhado = false,
   subniveisVisiveis = { s: true, p: true, d: true, f: true },
   /** Fundo transparente para sobrepor o vídeo da câmera (modo RA em celular) */
-  fundoTransparente = false
+  fundoTransparente = false,
+  mostrarCoordenadas = true,
+  rotacaoAutomatica = false
 }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
   const atomGroupRef = useRef(null);
+  const coordenadasGroupRef = useRef(null);
   const nucleusSimpleRef = useRef(null);
   const nucleusDetailedRef = useRef(null);
   const animationIdRef = useRef(null);
   const electronAnimationIdRef = useRef(null);
   const mouseRef = useRef({ isDown: false, x: 0, y: 0, rotX: 0, rotY: 0 });
   const forcarNucleoRef = useRef(forcarNucleoDetalhado);
+  const rotacaoAutomaticaRef = useRef(rotacaoAutomatica);
 
   forcarNucleoRef.current = forcarNucleoDetalhado;
+  rotacaoAutomaticaRef.current = rotacaoAutomatica;
 
   const desenharAtomo = (scene, atomGroup, num, nNeutroes) => {
     if (!atomGroup || !scene) return;
 
-    while (atomGroup.children.length > 0) {
-      atomGroup.remove(atomGroup.children[0]);
+    const filhosRemoviveis = atomGroup.children.filter((child) => child.name !== COORDINATES_GROUP_NAME);
+    for (const child of filhosRemoviveis) {
+      atomGroup.remove(child);
     }
 
     const numNeutroes = nNeutroes ?? (num === 1 ? 0 : Math.round(num * (num <= 20 ? 1.0 : 1.15)));
@@ -212,8 +521,12 @@ export default function Atom3D({
     const nucleusGeometry = new THREE.SphereGeometry(15, 32, 32);
     const nucleusMaterial = new THREE.MeshPhongMaterial({
       color: 0x9ca3af,
+      emissive: 0x4b5563,
+      emissiveIntensity: 0.08,
+      specular: 0xffffff,
+      shininess: 60,
       transparent: true,
-      opacity: 0.92
+      opacity: 0.94
     });
     const nucleusSimple = new THREE.Mesh(nucleusGeometry, nucleusMaterial);
     nucleusSimple.userData = { isNucleusSimple: true };
@@ -222,21 +535,9 @@ export default function Atom3D({
 
     const nucleonRadius = Math.max(1.0, 3.5 - Math.log(totalNucleons + 1) * 0.5);
     const nucleusRadius = 12;
-    const particleGeo = new THREE.SphereGeometry(nucleonRadius, 20, 20);
-    const protonMat = new THREE.MeshPhongMaterial({
-      color: 0xe11d48,
-      emissive: 0xbe123c,
-      emissiveIntensity: 0.15,
-      specular: 0xffffff,
-      shininess: 30
-    });
-    const neutronMat = new THREE.MeshPhongMaterial({
-      color: 0x94a3b8,
-      emissive: 0x64748b,
-      emissiveIntensity: 0.05,
-      specular: 0xffffff,
-      shininess: 20
-    });
+    const particleGeo = new THREE.SphereGeometry(nucleonRadius, ESFERA_SEGMENTOS, ESFERA_SEGMENTOS);
+    const protonMat = criarMaterialEsfera(0xe11d48, 0.15, 30);
+    const neutronMat = criarMaterialEsfera(0x94a3b8, 0.05, 20);
 
     const posicoes = distribuirNucleons(totalNucleons, nucleusRadius);
     const maxSpeed = 0.15;
@@ -275,7 +576,7 @@ export default function Atom3D({
     atomGroup.add(nucleusGroup);
 
     const config = obterConfiguracaoEletronica(num);
-    const electronGeometry = new THREE.SphereGeometry(3, 16, 16);
+    const electronGeometry = new THREE.SphereGeometry(RAIO_ELETRON, ESFERA_SEGMENTOS, ESFERA_SEGMENTOS);
     let sublevelIndex = 0;
 
     for (const sub of AUFBAU_ORDER) {
@@ -284,11 +585,11 @@ export default function Atom3D({
 
       const n = parseInt(sub.charAt(0), 10);
       const tipo = sub.charAt(sub.length - 1);
-      const cor = SUBLEVEL_COLORS[tipo];
+      const cor = obterCorSubnivel(sub);
       const baseRadius = 35 + n * 28 + { s: 0, p: 3, d: 6, f: 9 }[tipo];
 
       const shell = criarFormaOrbital(tipo, baseRadius, cor);
-      shell.userData = { isSublevelShell: true, tipo };
+      shell.userData = { isSublevelShell: true, tipo, sub };
       shell.visible = subniveisVisiveis[tipo] !== false;
       atomGroup.add(shell);
 
@@ -296,21 +597,18 @@ export default function Atom3D({
 
       for (let e = 0; e < posicoesElectron.length; e++) {
         const [x, y, z] = posicoesElectron[e];
-        const electronMaterial = new THREE.MeshPhongMaterial({
-          color: cor,
-          emissive: cor,
-          emissiveIntensity: 0.6,
-          transparent: true,
-          opacity: 1.0
-        });
+        const electronMaterial = criarMaterialEsfera(cor, 0.15, 30);
+        electronMaterial.transparent = true;
+        electronMaterial.opacity = 1.0;
         const electron = new THREE.Mesh(electronGeometry, electronMaterial);
         electron.position.set(x, y, z);
         const r = Math.sqrt(x * x + y * y + z * z);
         const angle1 = Math.atan2(y, x);
         const angle2 = Math.asin(Math.max(-1, Math.min(1, z / r)));
-        electron.visible = mostrarEletrons;
+        electron.visible = mostrarEletrons && subniveisVisiveis[tipo] !== false;
         electron.userData = {
           isElectron: true,
+          tipoSubnivel: tipo,
           radius: r,
           angle1,
           angle2,
@@ -376,22 +674,18 @@ export default function Atom3D({
     });
   };
 
-  const atualizarVisibilidadeEletrons = () => {
-    const atomGroup = atomGroupRef.current;
-    if (!atomGroup) return;
-    atomGroup.children.forEach((child) => {
-      if (child.userData?.isElectron) {
-        child.visible = mostrarEletrons;
-      }
-    });
-  };
-
-  const atualizarVisibilidadeSubniveis = () => {
+  const aplicarVisibilidadeSubniveis = () => {
     const atomGroup = atomGroupRef.current;
     if (!atomGroup) return;
     atomGroup.children.forEach((child) => {
       if (child.userData?.isSublevelShell && child.userData.tipo) {
         child.visible = subniveisVisiveis[child.userData.tipo] !== false;
+        return;
+      }
+      if (child.userData?.isElectron) {
+        const tipo = child.userData.tipoSubnivel;
+        const subnivelAtivo = tipo ? subniveisVisiveis[tipo] !== false : true;
+        child.visible = mostrarEletrons && subnivelAtivo;
       }
     });
   };
@@ -399,7 +693,7 @@ export default function Atom3D({
   const animateElectrons = (group) => {
     if (!group) return;
     group.children.forEach((child) => {
-      if (child.userData?.isElectron) {
+      if (child.userData?.isElectron && child.visible) {
         const data = child.userData;
         const material = child.material;
         data.transitionCounter++;
@@ -482,16 +776,15 @@ export default function Atom3D({
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.12;
     renderer.setClearColor(0x000000, 1);
     renderer.domElement.style.touchAction = 'none';
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
-    scene.add(directionalLight);
+    configurarIluminacao(scene);
 
     const atomGroup = new THREE.Group();
     scene.add(atomGroup);
@@ -499,6 +792,11 @@ export default function Atom3D({
 
     const num = Math.max(1, Math.min(118, numeroAtomico || 6));
     desenharAtomo(scene, atomGroup, num, neutroes);
+
+    const coordenadasGroup = criarGrupoCoordenadas();
+    coordenadasGroup.visible = mostrarCoordenadas;
+    atomGroup.add(coordenadasGroup);
+    coordenadasGroupRef.current = coordenadasGroup;
 
     const mouse = mouseRef.current;
     const pointers = new Map();
@@ -603,7 +901,9 @@ export default function Atom3D({
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
       if (atomGroup) {
-        atomGroup.rotation.y += 0.005;
+        if (rotacaoAutomaticaRef.current) {
+          atomGroup.rotation.y += ROTACAO_AUTOMATICA_VELOCIDADE;
+        }
         atualizarVisibilidadeNucleo();
         animarNucleons();
       }
@@ -698,15 +998,17 @@ export default function Atom3D({
     if (!atomGroup || !scene) return;
     const num = Math.max(1, Math.min(118, numeroAtomico || 6));
     desenharAtomo(scene, atomGroup, num, neutroes);
+    aplicarVisibilidadeSubniveis();
   }, [numeroAtomico, neutroes]);
 
   useEffect(() => {
-    atualizarVisibilidadeEletrons();
-  }, [mostrarEletrons]);
+    aplicarVisibilidadeSubniveis();
+  }, [mostrarEletrons, subniveisVisiveis]);
 
   useEffect(() => {
-    atualizarVisibilidadeSubniveis();
-  }, [subniveisVisiveis]);
+    const group = coordenadasGroupRef.current;
+    if (group) group.visible = mostrarCoordenadas;
+  }, [mostrarCoordenadas]);
 
   return <div ref={containerRef} id="canvas-container" className="atom3d-container" />;
 }

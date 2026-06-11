@@ -27,6 +27,8 @@ import ScienceIcon from '@mui/icons-material/Science';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VideocamIcon from '@mui/icons-material/Videocam';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
 import Atom3D from './components/Atom3D';
 import { AppMenuBar } from './components/AppMenu';
 import TabelaPeriodica from './components/TabelaPeriodica';
@@ -35,11 +37,20 @@ import {
   CATEGORIAS,
   obterConfiguracaoEletronica,
   configParaTexto,
-  SUBLEVEL_COLORS_HEX
+  SUBLEVEL_COLORS_HEX,
+  SUBLEVEL_SHELL_COLORS_HEX
 } from './data/elementosQuimicos';
 import './App.css';
 
 const SUBNIVEIS_INITIAL = { s: true, p: true, d: true, f: true };
+
+const LEGENDA_SUBNIVEIS = [
+  { id: 's', cor: SUBLEVEL_COLORS_HEX.s },
+  { id: 'p', cor: SUBLEVEL_COLORS_HEX.p },
+  { id: 'd', cor: SUBLEVEL_COLORS_HEX.d },
+  { id: '4f', cor: SUBLEVEL_SHELL_COLORS_HEX['4f'] },
+  { id: '5f', cor: SUBLEVEL_SHELL_COLORS_HEX['5f'] }
+];
 
 function ElementoInfoCard({
   elemento,
@@ -144,9 +155,9 @@ function ElementoInfoCard({
           Subníveis (legenda)
         </Typography>
         <Stack direction="row" flexWrap="wrap" sx={{ gap: layoutPaisagemDrawer ? 0.4 : 0.75 }}>
-          {['s', 'p', 'd', 'f'].map((t) => (
+          {LEGENDA_SUBNIVEIS.map(({ id, cor }) => (
             <Box
-              key={t}
+              key={id}
               sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -154,8 +165,8 @@ function ElementoInfoCard({
                 px: layoutPaisagemDrawer ? 0.6 : 1,
                 py: 0.25,
                 borderRadius: 10,
-                bgcolor: alpha(SUBLEVEL_COLORS_HEX[t], 0.14),
-                border: `1px solid ${alpha(SUBLEVEL_COLORS_HEX[t], 0.35)}`
+                bgcolor: alpha(cor, 0.14),
+                border: `1px solid ${alpha(cor, 0.35)}`
               }}
             >
               <Box
@@ -164,7 +175,7 @@ function ElementoInfoCard({
                   width: layoutPaisagemDrawer ? 6 : 8,
                   height: layoutPaisagemDrawer ? 6 : 8,
                   borderRadius: '50%',
-                  bgcolor: SUBLEVEL_COLORS_HEX[t]
+                  bgcolor: cor
                 }}
               />
               <Typography
@@ -172,7 +183,7 @@ function ElementoInfoCard({
                 component="span"
                 sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: layoutPaisagemDrawer ? '0.65rem' : undefined }}
               >
-                {t}
+                {id}
               </Typography>
             </Box>
           ))}
@@ -414,6 +425,8 @@ function App() {
   const [painelElementoAberto, setPainelElementoAberto] = useState(false);
   const [dialogAberto, setDialogAberto] = useState(false);
   const [mostrarEletrons, setMostrarEletrons] = useState(true);
+  const [mostrarCoordenadas, setMostrarCoordenadas] = useState(true);
+  const [rotacaoAutomatica, setRotacaoAutomatica] = useState(false);
   const [forcarNucleoDetalhado, setForcarNucleoDetalhado] = useState(false);
   const [subniveisVisiveis, setSubniveisVisiveis] = useState(SUBNIVEIS_INITIAL);
   const [subniveisAnchor, setSubniveisAnchor] = useState(null);
@@ -429,7 +442,10 @@ function App() {
   }, [layoutDesktop]);
 
   useEffect(() => {
-    if (!dialogAberto) setModoRealidadeAumentada(false);
+    if (!dialogAberto) {
+      setModoRealidadeAumentada(false);
+      setRotacaoAutomatica(false);
+    }
   }, [dialogAberto]);
 
   useEffect(() => {
@@ -791,6 +807,53 @@ function App() {
             </Button>
             <Button
               size={dialogMobileLayout ? 'medium' : 'small'}
+              variant={rotacaoAutomatica ? 'contained' : 'outlined'}
+              color={rotacaoAutomatica ? 'primary' : 'inherit'}
+              startIcon={<ThreeDRotationIcon />}
+              onClick={() => setRotacaoAutomatica((v) => !v)}
+              sx={(theme) => ({
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: dialogMobileLayout ? 1 : 0.75,
+                px: dialogMobileLayout ? 1.75 : 1.5,
+                minHeight: dialogMobileLayout ? 44 : undefined,
+                flexShrink: 0,
+                borderColor: alpha('#fff', 0.14),
+                color: rotacaoAutomatica ? undefined : 'grey.200',
+                '&:hover': {
+                  borderColor: alpha(theme.palette.primary.main, 0.55),
+                  bgcolor: rotacaoAutomatica ? undefined : alpha(theme.palette.primary.main, 0.08)
+                }
+              })}
+            >
+              {rotacaoAutomatica ? 'Parar rotação' : 'Rotação automática'}
+            </Button>
+            <Button
+              size={dialogMobileLayout ? 'medium' : 'small'}
+              variant="outlined"
+              startIcon={<GridOnIcon />}
+              onClick={() => setMostrarCoordenadas(!mostrarCoordenadas)}
+              sx={(theme) => ({
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                py: dialogMobileLayout ? 1 : 0.75,
+                px: dialogMobileLayout ? 1.75 : 1.5,
+                minHeight: dialogMobileLayout ? 44 : undefined,
+                flexShrink: 0,
+                borderColor: alpha('#fff', 0.14),
+                color: 'grey.200',
+                '&:hover': {
+                  borderColor: alpha(theme.palette.primary.main, 0.55),
+                  bgcolor: alpha(theme.palette.primary.main, 0.08)
+                }
+              })}
+            >
+              {mostrarCoordenadas ? 'Ocultar coordenadas' : 'Mostrar coordenadas'}
+            </Button>
+            <Button
+              size={dialogMobileLayout ? 'medium' : 'small'}
               variant="outlined"
               onClick={(e) => setSubniveisAnchor(e.currentTarget)}
               sx={(theme) => ({
@@ -933,6 +996,8 @@ function App() {
                   numeroAtomico={numeroAtomico}
                   neutroes={elemento?.neutroes}
                   mostrarEletrons={mostrarEletrons}
+                  mostrarCoordenadas={mostrarCoordenadas}
+                  rotacaoAutomatica={rotacaoAutomatica}
                   forcarNucleoDetalhado={forcarNucleoDetalhado}
                   subniveisVisiveis={subniveisVisiveis}
                   fundoTransparente={Boolean(dialogMobileLayout && modoRealidadeAumentada)}
