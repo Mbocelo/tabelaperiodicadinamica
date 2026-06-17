@@ -5,22 +5,17 @@ import {
   AUFBAU_ORDER,
   obterCorSubnivel
 } from '../data/elementosQuimicos';
+import { COORDINATES_GROUP_NAME, criarGrupoCoordenadas } from './coordenadas3D';
 
 const ZOOM_THRESHOLD_NUCLEUS = 220;
 /** Câmera mais afastada ao abrir (z maior = campo mais largo / zoom mais “baixo”) */
 export const CAMERA_Z_INICIAL = 520;
+/** Fundo da cena 3D (cinza-azulado — contraste com orbitais coloridos) */
+const FUNDO_3D = 0x263238;
 /** Sombra no plano horizontal (modo realidade aumentada) — abaixo das órbitas mais externas */
 const AR_SHADOW_RADIUS = 285;
 const AR_SHADOW_Y = -305;
 const AR_SHADOW_NAME = 'ar-atom-ground-shadow';
-const COORDINATES_GROUP_NAME = 'atom-coordinates';
-/** Comprimento dos eixos X, Y e Z (unidades da cena) */
-const AXES_SIZE = 300;
-const GRID_SIZE = 620;
-const GRID_DIVISIONS = 31;
-const GRID_Y = -280;
-const AXIS_LABEL_OFFSET = 22;
-const AXIS_LABEL_SCALE = 42;
 
 /** Textura radial suave para sombra estilo “contact shadow” sobre o vídeo da câmera */
 function criarTexturaSombraRadial(size = 256) {
@@ -39,87 +34,6 @@ function criarTexturaSombraRadial(size = 256) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
-}
-
-function criarLinhaEixo(cor, inicio, fim) {
-  const geo = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(...inicio),
-    new THREE.Vector3(...fim)
-  ]);
-  const mat = new THREE.LineBasicMaterial({ color: cor, transparent: true, opacity: 0.9 });
-  return new THREE.Line(geo, mat);
-}
-
-/** Etiqueta em sprite no extremo de cada eixo (+/− X, Y, Z) */
-function criarEtiquetaEixo(texto, cor) {
-  const canvas = document.createElement('canvas');
-  const size = 64;
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.clearRect(0, 0, size, size);
-    ctx.fillStyle = cor;
-    ctx.font = 'bold 28px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(texto, size / 2, size / 2);
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const mat = new THREE.SpriteMaterial({
-    map: tex,
-    transparent: true,
-    depthTest: true,
-    toneMapped: false
-  });
-  const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(AXIS_LABEL_SCALE, AXIS_LABEL_SCALE, 1);
-  sprite.userData = { isAxisLabel: true, labelTexture: tex };
-  return sprite;
-}
-
-function criarGrupoCoordenadas() {
-  const group = new THREE.Group();
-  group.name = COORDINATES_GROUP_NAME;
-
-  const eixosLinhas = [
-    { cor: 0xff5555, inicio: [-AXES_SIZE, 0, 0], fim: [AXES_SIZE, 0, 0] },
-    { cor: 0x55ff55, inicio: [0, -AXES_SIZE, 0], fim: [0, AXES_SIZE, 0] },
-    { cor: 0x5599ff, inicio: [0, 0, -AXES_SIZE], fim: [0, 0, AXES_SIZE] }
-  ];
-  for (const { cor, inicio, fim } of eixosLinhas) {
-    const linha = criarLinhaEixo(cor, inicio, fim);
-    linha.renderOrder = 1;
-    group.add(linha);
-  }
-
-  const grid = new THREE.GridHelper(GRID_SIZE, GRID_DIVISIONS, 0x5a6a7a, 0x2a3540);
-  grid.position.y = GRID_Y;
-  const gridMaterials = Array.isArray(grid.material) ? grid.material : [grid.material];
-  gridMaterials.forEach((mat) => {
-    mat.transparent = true;
-    mat.opacity = 0.45;
-  });
-  grid.renderOrder = 0;
-  group.add(grid);
-
-  const extremo = AXES_SIZE + AXIS_LABEL_OFFSET;
-  const etiquetas = [
-    { texto: '+X', cor: '#ff5555', pos: [extremo, 0, 0] },
-    { texto: '−X', cor: '#ff5555', pos: [-extremo, 0, 0] },
-    { texto: '+Y', cor: '#55ff55', pos: [0, extremo, 0] },
-    { texto: '−Y', cor: '#55ff55', pos: [0, -extremo, 0] },
-    { texto: '+Z', cor: '#5599ff', pos: [0, 0, extremo] },
-    { texto: '−Z', cor: '#5599ff', pos: [0, 0, -extremo] }
-  ];
-  for (const { texto, cor, pos } of etiquetas) {
-    const label = criarEtiquetaEixo(texto, cor);
-    label.position.set(pos[0], pos[1], pos[2]);
-    group.add(label);
-  }
-
-  return group;
 }
 
 const ROTACAO_AUTOMATICA_VELOCIDADE = 0.005;
@@ -774,7 +688,7 @@ export default function Atom3D({
     if (!container) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    scene.background = new THREE.Color(FUNDO_3D);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(
@@ -792,7 +706,7 @@ export default function Atom3D({
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
-    renderer.setClearColor(0x000000, 1);
+    renderer.setClearColor(FUNDO_3D, 1);
     renderer.domElement.style.touchAction = 'none';
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
@@ -960,8 +874,8 @@ export default function Atom3D({
       scene.background = null;
       renderer.setClearColor(0x000000, 0);
     } else {
-      scene.background = new THREE.Color(0x000000);
-      renderer.setClearColor(0x000000, 1);
+      scene.background = new THREE.Color(FUNDO_3D);
+      renderer.setClearColor(FUNDO_3D, 1);
     }
   }, [fundoTransparente]);
 

@@ -138,10 +138,26 @@ export const elementosQuimicos = {
 export const lantanides = [57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71];
 export const actinides = [89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103];
 
-// Ordem de preenchimento dos subníveis (Aufbau)
+const L_QUANTICO = { s: 0, p: 1, d: 2, f: 3 };
+
+/** Compara subníveis por energia crescente (regra n+ℓ, depois n, depois ℓ) — diagrama de Pauling/Madelung */
+export function compararSubniveisPorEnergia(a, b) {
+  const na = parseInt(a[0], 10);
+  const nb = parseInt(b[0], 10);
+  const la = L_QUANTICO[a[a.length - 1]] ?? 0;
+  const lb = L_QUANTICO[b[b.length - 1]] ?? 0;
+  const ea = na + la;
+  const eb = nb + lb;
+  if (ea !== eb) return ea - eb;
+  if (na !== nb) return na - nb;
+  return la - lb;
+}
+
+// Ordem crescente de energia / preenchimento (Aufbau, diagrama de Pauling)
 export const AUFBAU_ORDER = [
   '1s', '2s', '2p', '3s', '3p', '4s', '3d', '4p', '5s', '4d', '5p', '6s', '4f', '5d', '6p', '7s', '5f', '6d', '7p'
 ];
+export const ORDEM_ENERGIA = AUFBAU_ORDER;
 export const SUBLEVEL_CAPACITY = { s: 2, p: 6, d: 10, f: 14 };
 export const SUBLEVEL_COLORS = { s: 0x00ff88, p: 0x4488ff, d: 0xffcc00, f: 0xff44aa };
 export const SUBLEVEL_COLORS_HEX = { s: '#00ff88', p: '#4488ff', d: '#ffcc00', f: '#ff44aa' };
@@ -218,7 +234,7 @@ export function obterConfiguracaoEletronica(numeroAtomico) {
 const SUPERSCRIPTS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 export function configParaTexto(config) {
   const partes = [];
-  for (const sub of AUFBAU_ORDER) {
+  for (const sub of ORDEM_ENERGIA) {
     if (config[sub] > 0) {
       const expoente = config[sub].toString().split('').map((c) => SUPERSCRIPTS[parseInt(c, 10)] || c).join('');
       partes.push(sub + expoente);

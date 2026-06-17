@@ -8,9 +8,7 @@ import {
   Drawer,
   TextField,
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   IconButton,
   Slider,
   Stack,
@@ -37,6 +35,7 @@ import Atom3D, {
   cameraZParaSlider,
   sliderParaCameraZ
 } from './components/Atom3D';
+import AtomModeloHistorico from './components/AtomModeloHistorico';
 import { AppMenuBar } from './components/AppMenu';
 import TabelaPeriodica from './components/TabelaPeriodica';
 import {
@@ -47,6 +46,7 @@ import {
   SUBLEVEL_COLORS_HEX,
   SUBLEVEL_SHELL_COLORS_HEX
 } from './data/elementosQuimicos';
+import { LISTA_MODELOS_ATOMICOS, ehModeloQuantico, tituloModeloVisualizador } from './data/tiposModeloAtomico';
 import './App.css';
 
 const SUBNIVEIS_INITIAL = { s: true, p: true, d: true, f: true };
@@ -63,7 +63,7 @@ function ElementoInfoCard({
   elemento,
   numeroAtomico,
   onNumeroAtomicoChange,
-  onAbrir3D,
+  onAbrirModelo,
   fullWidth = false,
   mostrarBotaoFechar = false,
   onFechar
@@ -126,6 +126,14 @@ function ElementoInfoCard({
           sx={{ mb: layoutPaisagemDrawer ? 0.35 : 0.75, fontSize: layoutPaisagemDrawer ? '0.65rem' : undefined }}
         >
           Configuração eletrónica
+          <Typography
+            component="span"
+            variant="caption"
+            color="text.disabled"
+            sx={{ display: 'block', fontSize: layoutPaisagemDrawer ? '0.58rem' : '0.68rem', mt: 0.15 }}
+          >
+            ordem crescente de energia (Pauling)
+          </Typography>
         </Typography>
         <Typography
           variant="body2"
@@ -215,7 +223,7 @@ function ElementoInfoCard({
         bgcolor: 'background.paper',
         boxSizing: 'border-box',
         border: `1px solid ${alpha(categoriaCor, 0.4)}`,
-        boxShadow: `0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px ${alpha(categoriaCor, 0.12)}`,
+        boxShadow: `0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px ${alpha(categoriaCor, 0.12)}`,
         '& .MuiTypography-root': { color: 'text.primary' }
       }}
     >
@@ -269,9 +277,9 @@ function ElementoInfoCard({
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              bgcolor: alpha(categoriaCor, 0.28),
-              border: `2px solid ${alpha(categoriaCor, 0.55)}`,
-              boxShadow: `inset 0 1px 0 ${alpha('#fff', 0.07)}`
+              bgcolor: categoriaCor,
+              border: `2px solid ${alpha(categoriaCor, 0.85)}`,
+              boxShadow: `0 2px 8px ${alpha(categoriaCor, 0.35)}`
             }}
           >
             <Typography
@@ -306,11 +314,11 @@ function ElementoInfoCard({
               sx={{
                 height: layoutPaisagemDrawer ? 22 : 26,
                 maxWidth: '100%',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: layoutPaisagemDrawer ? '0.65rem' : '0.72rem',
-                bgcolor: alpha(categoriaCor, 0.22),
-                color: 'common.white',
-                border: `1px solid ${alpha(categoriaCor, 0.45)}`,
+                bgcolor: alpha(categoriaCor, 0.16),
+                color: categoriaCor,
+                border: `1.5px solid ${alpha(categoriaCor, 0.55)}`,
                 '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis', px: layoutPaisagemDrawer ? 0.75 : 1 }
               }}
             />
@@ -356,19 +364,17 @@ function ElementoInfoCard({
       <Box
         sx={{
           px: layoutPaisagemDrawer ? 1.25 : 2,
-          py: layoutPaisagemDrawer ? 1 : 1.5,
-          pb: mostrarBotaoFechar && !layoutPaisagemDrawer ? 2 : layoutPaisagemDrawer ? 1.25 : 1.5,
-          bgcolor: (t) => alpha(t.palette.action.hover, t.palette.mode === 'dark' ? 0.35 : 1),
+          py: layoutPaisagemDrawer ? 1 : 1.25,
+          pb: mostrarBotaoFechar && !layoutPaisagemDrawer ? 2 : layoutPaisagemDrawer ? 1.25 : 1.25,
+          bgcolor: (t) =>
+            t.palette.mode === 'dark'
+              ? alpha(t.palette.common.black, 0.25)
+              : alpha(t.palette.primary.main, 0.06),
           borderTop: 1,
           borderColor: 'divider'
         }}
       >
-        <Stack
-          direction={layoutPaisagemDrawer ? 'row' : { xs: 'column', sm: 'row' }}
-          spacing={1}
-          alignItems={layoutPaisagemDrawer ? 'center' : { xs: 'stretch', sm: 'center' }}
-          justifyContent="flex-start"
-        >
+        <Stack spacing={layoutPaisagemDrawer ? 0.75 : 1}>
           <TextField
             label="Nº atômico"
             type="number"
@@ -379,26 +385,52 @@ function ElementoInfoCard({
             }}
             inputProps={{ min: 1, max: 118 }}
             size="small"
-            sx={{
-              width: layoutPaisagemDrawer ? 96 : { xs: '100%', sm: 108 },
-              flexShrink: 0
-            }}
+            fullWidth
+            sx={{ bgcolor: 'background.paper' }}
           />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={layoutPaisagemDrawer ? undefined : <ScienceIcon />}
-            onClick={onAbrir3D}
-            size={layoutPaisagemDrawer ? 'small' : 'medium'}
-            sx={{
-              width: layoutPaisagemDrawer ? { xs: 'auto', sm: 'auto' } : { xs: '100%', sm: 'auto' },
-              minHeight: layoutPaisagemDrawer ? 34 : 40,
-              flex: layoutPaisagemDrawer ? '1 1 auto' : undefined,
-              minWidth: 0
-            }}
-          >
-            {layoutPaisagemDrawer ? '3D' : 'Modelo 3D'}
-          </Button>
+          <Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                display: 'block',
+                mb: 0.75,
+                fontWeight: 600,
+                fontSize: layoutPaisagemDrawer ? '0.65rem' : '0.72rem'
+              }}
+            >
+              Modelos atómicos
+            </Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: layoutPaisagemDrawer ? 0.5 : 0.75
+              }}
+            >
+              {LISTA_MODELOS_ATOMICOS.map(({ id, label, labelCurto, descricao }) => (
+                <Button
+                  key={id}
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  startIcon={id === 'quantico' && !layoutPaisagemDrawer ? <ScienceIcon sx={{ fontSize: 16 }} /> : undefined}
+                  onClick={() => onAbrirModelo(id)}
+                  title={descricao}
+                  sx={{
+                    minHeight: layoutPaisagemDrawer ? 32 : 36,
+                    px: layoutPaisagemDrawer ? 0.75 : 1,
+                    fontSize: layoutPaisagemDrawer ? '0.68rem' : '0.78rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    justifyContent: 'flex-start'
+                  }}
+                >
+                  {layoutPaisagemDrawer ? labelCurto : label}
+                </Button>
+              ))}
+            </Box>
+          </Box>
         </Stack>
       </Box>
     </Paper>
@@ -416,7 +448,7 @@ ElementoInfoCard.propTypes = {
   }).isRequired,
   numeroAtomico: PropTypes.number.isRequired,
   onNumeroAtomicoChange: PropTypes.func.isRequired,
-  onAbrir3D: PropTypes.func.isRequired,
+  onAbrirModelo: PropTypes.func.isRequired,
   fullWidth: PropTypes.bool,
   mostrarBotaoFechar: PropTypes.bool,
   onFechar: PropTypes.func
@@ -431,6 +463,7 @@ function App() {
   const [elementoSelecionado, setElementoSelecionado] = useState(6);
   const [painelElementoAberto, setPainelElementoAberto] = useState(false);
   const [dialogAberto, setDialogAberto] = useState(false);
+  const [tipoModeloAtomico, setTipoModeloAtomico] = useState('quantico');
   const [mostrarEletrons, setMostrarEletrons] = useState(true);
   const [mostrarCoordenadas, setMostrarCoordenadas] = useState(true);
   const [rotacaoAutomatica, setRotacaoAutomatica] = useState(false);
@@ -508,7 +541,7 @@ function App() {
     };
   }, [dialogAberto, dialogMobileLayout, modoRealidadeAumentada]);
 
-  const handleDesenharAtomo = () => {
+  const handleAbrirModelo = (tipo) => {
     const num = parseInt(String(numeroAtomico), 10);
     if (isNaN(num) || num < 1 || num > 118) {
       setNumeroAtomico(6);
@@ -517,6 +550,8 @@ function App() {
       setNumeroAtomico(num);
       setElementoSelecionado(num);
     }
+    setTipoModeloAtomico(tipo);
+    if (!layoutDesktop) setPainelElementoAberto(false);
     setDialogAberto(true);
   };
 
@@ -533,7 +568,40 @@ function App() {
     setDialogAberto(false);
   };
 
+  const sxBotaoOverlay3D = (theme, { ativo = false } = {}) => ({
+    borderRadius: 1.5,
+    textTransform: 'none',
+    fontWeight: 600,
+    py: dialogMobileLayout ? 0.4 : 0.15,
+    px: dialogMobileLayout ? 0.85 : 0.55,
+    minHeight: dialogMobileLayout ? 32 : 24,
+    fontSize: dialogMobileLayout ? '0.75rem' : '0.7rem',
+    flexShrink: 0,
+    ...(ativo
+      ? {
+        borderColor: theme.palette.primary.main,
+        color: 'common.white',
+        bgcolor: theme.palette.primary.main,
+        '&:hover': {
+          borderColor: theme.palette.primary.dark,
+          bgcolor: theme.palette.primary.dark
+        }
+      }
+      : {
+        borderColor: alpha('#fff', 0.22),
+        color: 'grey.100',
+        bgcolor: alpha('#000', 0.14),
+        '&:hover': {
+          borderColor: alpha(theme.palette.primary.main, 0.55),
+          bgcolor: alpha('#000', 0.28)
+        }
+      })
+  });
+
   const elemento = elementosQuimicos[numeroAtomico];
+
+  const modeloQuantico = ehModeloQuantico(tipoModeloAtomico);
+  const categoriaCor = elemento ? (CATEGORIAS[elemento.categoria]?.cor ?? '#4CAF50') : '#4CAF50';
 
   const propsCartaoElemento = elemento
     ? {
@@ -543,10 +611,7 @@ function App() {
         setNumeroAtomico(n);
         setElementoSelecionado(n);
       },
-      onAbrir3D: () => {
-        if (!layoutDesktop) setPainelElementoAberto(false);
-        handleDesenharAtomo();
-      }
+      onAbrirModelo: handleAbrirModelo
     }
     : null;
 
@@ -557,7 +622,7 @@ function App() {
         width: '100vw',
         overflow: 'auto',
         position: 'relative',
-        bgcolor: '#1a1a1a'
+        bgcolor: 'background.default'
       }}
     >
       <AppMenuBar
@@ -585,7 +650,7 @@ function App() {
         onClose={() => setPainelElementoAberto(false)}
         slotProps={{
           backdrop: {
-            sx: { backgroundColor: 'rgba(0,0,0,0.55)' }
+            sx: { backgroundColor: 'rgba(0,0,0,0.35)' }
           }
         }}
         PaperProps={{
@@ -621,298 +686,301 @@ function App() {
       <Dialog
         open={dialogAberto}
         onClose={handleFecharDialog}
-        fullScreen={dialogMobileLayout}
-        maxWidth="lg"
-        fullWidth
+        fullScreen
         scroll="paper"
         slotProps={{
           backdrop: {
             sx: {
-              backgroundColor: dialogMobileLayout ? 'rgba(4, 6, 12, 0.92)' : 'rgba(4, 6, 12, 0.78)',
-              backdropFilter: dialogMobileLayout ? 'none' : 'blur(14px)',
-              WebkitBackdropFilter: dialogMobileLayout ? 'none' : 'blur(14px)'
+              backgroundColor: 'rgba(0, 0, 0, 0.45)',
+              backdropFilter: dialogMobileLayout ? 'none' : 'blur(8px)',
+              WebkitBackdropFilter: dialogMobileLayout ? 'none' : 'blur(8px)'
             }
           }
         }}
         PaperProps={{
           elevation: 0,
-          sx: (theme) =>
-            dialogMobileLayout
-              ? {
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                maxHeight: '100dvh',
-                margin: 0,
-                borderRadius: 0,
-                pt: 'env(safe-area-inset-top, 0px)',
-                bgcolor: alpha(theme.palette.background.paper, 0.98),
-                backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
-                border: 'none',
-                boxShadow: 'none'
-              }
-              : {
-                width: '100%',
-                maxWidth: 'min(960px, calc(100vw - 24px))',
-                borderRadius: 3,
-                overflow: 'hidden',
-                bgcolor: alpha(theme.palette.background.paper, 0.92),
-                backgroundImage: `linear-gradient(165deg, ${alpha('#1e2228', 0.98)} 0%, ${alpha('#12151c', 1)} 45%, ${alpha('#0c0e12', 1)} 100%)`,
-                border: `1px solid ${alpha('#fff', 0.08)}`,
-                boxShadow: `0 32px 64px -16px rgba(0,0,0,0.75), 0 0 0 1px ${alpha(theme.palette.primary.main, 0.18)}, inset 0 1px 0 ${alpha('#fff', 0.04)}`
-              }
+          sx: {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            maxHeight: '100dvh',
+            margin: 0,
+            borderRadius: 0,
+            overflow: 'hidden',
+            bgcolor: '#263238',
+            pt: 'env(safe-area-inset-top, 0px)',
+            pb: 'env(safe-area-inset-bottom, 0px)'
+          }
         }}
       >
-        <DialogTitle
-          component="div"
-          sx={(theme) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: { xs: 1.5, sm: 2 },
-            py: { xs: 1.5, sm: 2 },
-            px: { xs: 1.5, sm: 2.5 },
-            pr: { xs: 1, sm: 1 },
-            flexShrink: 0,
-            borderBottom: `1px solid ${alpha('#fff', 0.06)}`,
-            background: `linear-gradient(105deg, ${alpha(theme.palette.primary.main, 0.14)} 0%, transparent 55%)`
-          })}
-        >
-          <Box
-            sx={(theme) => ({
-              width: { xs: 40, sm: 48 },
-              height: { xs: 40, sm: 48 },
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              bgcolor: alpha(theme.palette.primary.main, 0.18),
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.35)}`,
-              boxShadow: `0 0 24px ${alpha(theme.palette.primary.main, 0.2)}`
-            })}
-          >
-            <ScienceIcon sx={{ fontSize: { xs: 22, sm: 28 }, color: 'primary.light' }} />
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="overline"
-              sx={{
-                color: 'primary.main',
-                letterSpacing: { xs: 1.5, sm: 2 },
-                fontSize: { xs: '0.6rem', sm: '0.65rem' },
-                lineHeight: 1.2
-              }}
-            >
-              Visualização interativa
-            </Typography>
-            <Typography
-              variant="h6"
-              component="h2"
-              sx={{ fontWeight: 700, lineHeight: 1.25, mt: 0.25, fontSize: { xs: '1rem', sm: '1.25rem' } }}
-            >
-              Modelo atômico 3D
-            </Typography>
-            {elemento && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 0.5, fontWeight: 500, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-              >
-                <Box component="span" sx={{ color: 'secondary.main', fontWeight: 700, mr: 0.75 }}>
-                  {elemento.simbolo}
-                </Box>
-                {elemento.nome}
-              </Typography>
-            )}
-          </Box>
-          <IconButton
-            aria-label="fechar"
-            onClick={handleFecharDialog}
-            size={dialogMobileLayout ? 'medium' : 'small'}
-            sx={{
-              color: 'grey.400',
-              bgcolor: alpha('#fff', 0.06),
-              flexShrink: 0,
-              minWidth: dialogMobileLayout ? 44 : undefined,
-              minHeight: dialogMobileLayout ? 44 : undefined,
-              '&:hover': { bgcolor: alpha('#fff', 0.12), color: 'common.white' }
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
         <DialogContent
           sx={{
             p: 0,
-            bgcolor: 'transparent',
+            flex: '1 1 auto',
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            ...(dialogMobileLayout
-              ? { flex: '1 1 auto', minHeight: 0 }
-              : { overflow: 'hidden' })
+            bgcolor: modoRealidadeAumentada && dialogMobileLayout ? '#000' : '#263238'
           }}
         >
           <Box
             sx={{
-              display: 'flex',
-              flexWrap: { xs: 'nowrap', sm: 'wrap' },
-              flexDirection: 'row',
-              gap: 1,
-              py: { xs: 1.25, sm: 2 },
-              px: { xs: 1.25, sm: 2 },
-              alignItems: 'center',
-              flexShrink: 0,
-              overflowX: { xs: 'auto', sm: 'visible' },
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: { xs: 'thin', sm: 'auto' },
-              bgcolor: alpha('#000', 0.28),
-              borderBottom: `1px solid ${alpha('#fff', 0.05)}`
+              flex: 1,
+              position: 'relative',
+              minHeight: 0,
+              minWidth: 0,
+              width: '100%'
             }}
           >
-            <Button
-              size={dialogMobileLayout ? 'medium' : 'small'}
-              variant="outlined"
-              startIcon={mostrarEletrons ? <VisibilityOffIcon /> : <VisibilityIcon />}
-              onClick={() => setMostrarEletrons(!mostrarEletrons)}
-              sx={(theme) => ({
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
-                py: dialogMobileLayout ? 1 : 0.75,
-                px: dialogMobileLayout ? 1.75 : 1.5,
-                minHeight: dialogMobileLayout ? 44 : undefined,
-                flexShrink: 0,
-                borderColor: alpha('#fff', 0.14),
-                color: 'grey.200',
-                '&:hover': {
-                  borderColor: alpha(theme.palette.primary.main, 0.55),
-                  bgcolor: alpha(theme.palette.primary.main, 0.08)
-                }
-              })}
-            >
-              {mostrarEletrons ? 'Ocultar elétrons' : 'Mostrar elétrons'}
-            </Button>
-            <Button
-              size={dialogMobileLayout ? 'medium' : 'small'}
-              variant="outlined"
-              onClick={() => setForcarNucleoDetalhado(!forcarNucleoDetalhado)}
-              sx={(theme) => ({
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
-                py: dialogMobileLayout ? 1 : 0.75,
-                px: dialogMobileLayout ? 1.75 : 1.5,
-                minHeight: dialogMobileLayout ? 44 : undefined,
-                flexShrink: 0,
-                borderColor: alpha('#fff', 0.14),
-                color: 'grey.200',
-                '&:hover': {
-                  borderColor: alpha(theme.palette.primary.main, 0.55),
-                  bgcolor: alpha(theme.palette.primary.main, 0.08)
-                }
-              })}
-            >
-              {forcarNucleoDetalhado ? 'Esconder núcleo' : 'Mostrar núcleo'}
-            </Button>
-            <Button
-              size={dialogMobileLayout ? 'medium' : 'small'}
-              variant={rotacaoAutomatica ? 'contained' : 'outlined'}
-              color={rotacaoAutomatica ? 'primary' : 'inherit'}
-              startIcon={<ThreeDRotationIcon />}
-              onClick={() => setRotacaoAutomatica((v) => !v)}
-              sx={(theme) => ({
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
-                py: dialogMobileLayout ? 1 : 0.75,
-                px: dialogMobileLayout ? 1.75 : 1.5,
-                minHeight: dialogMobileLayout ? 44 : undefined,
-                flexShrink: 0,
-                borderColor: alpha('#fff', 0.14),
-                color: rotacaoAutomatica ? undefined : 'grey.200',
-                '&:hover': {
-                  borderColor: alpha(theme.palette.primary.main, 0.55),
-                  bgcolor: rotacaoAutomatica ? undefined : alpha(theme.palette.primary.main, 0.08)
-                }
-              })}
-            >
-              {rotacaoAutomatica ? 'Parar rotação' : 'Rotação automática'}
-            </Button>
-            <Button
-              size={dialogMobileLayout ? 'medium' : 'small'}
-              variant="outlined"
-              startIcon={<GridOnIcon />}
-              onClick={() => setMostrarCoordenadas(!mostrarCoordenadas)}
-              sx={(theme) => ({
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
-                py: dialogMobileLayout ? 1 : 0.75,
-                px: dialogMobileLayout ? 1.75 : 1.5,
-                minHeight: dialogMobileLayout ? 44 : undefined,
-                flexShrink: 0,
-                borderColor: alpha('#fff', 0.14),
-                color: 'grey.200',
-                '&:hover': {
-                  borderColor: alpha(theme.palette.primary.main, 0.55),
-                  bgcolor: alpha(theme.palette.primary.main, 0.08)
-                }
-              })}
-            >
-              {mostrarCoordenadas ? 'Ocultar coordenadas' : 'Mostrar coordenadas'}
-            </Button>
-            <Button
-              size={dialogMobileLayout ? 'medium' : 'small'}
-              variant="outlined"
-              onClick={(e) => setSubniveisAnchor(e.currentTarget)}
-              sx={(theme) => ({
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
-                py: dialogMobileLayout ? 1 : 0.75,
-                px: dialogMobileLayout ? 1.75 : 1.5,
-                minHeight: dialogMobileLayout ? 44 : undefined,
-                flexShrink: 0,
-                borderColor: alpha('#fff', 0.14),
-                color: 'grey.200',
-                '&:hover': {
-                  borderColor: alpha(theme.palette.primary.main, 0.55),
-                  bgcolor: alpha(theme.palette.primary.main, 0.08)
-                }
-              })}
-            >
-              Subníveis ▾
-            </Button>
             {dialogMobileLayout && (
-              <Button
-                size="medium"
-                variant={modoRealidadeAumentada ? 'contained' : 'outlined'}
-                color={modoRealidadeAumentada ? 'secondary' : 'inherit'}
-                startIcon={<VideocamIcon />}
-                onClick={() => setModoRealidadeAumentada((v) => !v)}
-                sx={(theme) => ({
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  py: 1,
-                  px: 1.75,
-                  minHeight: 44,
-                  flexShrink: 0,
-                  borderColor: alpha('#fff', 0.14),
-                  color: modoRealidadeAumentada ? undefined : 'grey.200',
-                  '&:hover': {
-                    borderColor: alpha(theme.palette.secondary.main, 0.55),
-                    bgcolor: modoRealidadeAumentada ? undefined : alpha(theme.palette.secondary.main, 0.08)
-                  }
-                })}
-              >
-                {modoRealidadeAumentada ? 'RA ligado' : 'Câmera RA'}
-              </Button>
+              <video
+                ref={videoCameraRef}
+                autoPlay
+                muted
+                playsInline
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  zIndex: 0,
+                  display: modoRealidadeAumentada ? 'block' : 'none',
+                  pointerEvents: 'none',
+                  backgroundColor: '#000'
+                }}
+              />
             )}
+            <Box sx={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+              {dialogAberto && modeloQuantico && (
+                <Atom3D
+                  numeroAtomico={numeroAtomico}
+                  neutroes={elemento?.neutroes}
+                  mostrarEletrons={mostrarEletrons}
+                  mostrarCoordenadas={mostrarCoordenadas}
+                  rotacaoAutomatica={rotacaoAutomatica}
+                  forcarNucleoDetalhado={forcarNucleoDetalhado}
+                  subniveisVisiveis={subniveisVisiveis}
+                  fundoTransparente={Boolean(dialogMobileLayout && modoRealidadeAumentada)}
+                  zoomCamera={zoomCamera}
+                  onZoomChange={setZoomCamera}
+                />
+              )}
+              {dialogAberto && !modeloQuantico && (
+                <AtomModeloHistorico
+                  key={tipoModeloAtomico}
+                  tipo={tipoModeloAtomico}
+                  numeroAtomico={numeroAtomico}
+                  corElemento={categoriaCor}
+                  rotacaoAutomatica={rotacaoAutomatica}
+                  mostrarCoordenadas={mostrarCoordenadas}
+                  fundoTransparente={Boolean(dialogMobileLayout && modoRealidadeAumentada)}
+                  zoomCamera={zoomCamera}
+                  onZoomChange={setZoomCamera}
+                />
+              )}
+            </Box>
+
+            {elemento && (
+              <Box
+                aria-hidden
+                sx={{
+                  position: 'absolute',
+                  top: { xs: 56, sm: 52 },
+                  right: { xs: 42, sm: 44 },
+                  zIndex: 4,
+                  pointerEvents: 'none',
+                  textAlign: 'right',
+                  userSelect: 'none',
+                  px: 1.25,
+                  py: 0.75,
+                  borderRadius: 1.5,
+                  bgcolor: alpha('#000', 0.28),
+                  backdropFilter: 'blur(4px)'
+                }}
+              >
+                <Typography
+                  component="div"
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: { xs: '3.25rem', sm: '3.5rem' },
+                    lineHeight: 1,
+                    color: 'common.white',
+                    letterSpacing: '-0.03em',
+                    textShadow: '0 2px 16px rgba(0,0,0,0.6)'
+                  }}
+                >
+                  {elemento.simbolo}
+                </Typography>
+                <Typography
+                  component="div"
+                  sx={{
+                    mt: 0.4,
+                    fontWeight: 600,
+                    fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                    color: alpha('#fff', 0.88),
+                    textShadow: '0 1px 8px rgba(0,0,0,0.55)',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {numeroAtomico} · {elemento.nome}
+                </Typography>
+                <Typography
+                  component="div"
+                  sx={{
+                    mt: 0.35,
+                    fontWeight: 500,
+                    fontSize: { xs: '0.72rem', sm: '0.8rem' },
+                    color: alpha('#fff', 0.72),
+                    textShadow: '0 1px 6px rgba(0,0,0,0.5)',
+                    maxWidth: 220,
+                    lineHeight: 1.25
+                  }}
+                >
+                  {tituloModeloVisualizador(tipoModeloAtomico)}
+                </Typography>
+              </Box>
+            )}
+
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 'max(6px, env(safe-area-inset-top, 0px))',
+                left: 6,
+                right: 6,
+                zIndex: 5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                pointerEvents: 'none'
+              }}
+            >
+              <Box
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  display: 'flex',
+                  flexWrap: 'nowrap',
+                  alignItems: 'center',
+                  gap: 0.4,
+                  px: 0.75,
+                  py: 0.4,
+                  borderRadius: 1.5,
+                  bgcolor: alpha('#000', 0.42),
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  WebkitOverflowScrolling: 'touch',
+                  touchAction: 'pan-x',
+                  overscrollBehaviorX: 'contain',
+                  pointerEvents: 'auto',
+                  scrollbarWidth: 'thin',
+                  '&::-webkit-scrollbar': { height: 5 },
+                  '&::-webkit-scrollbar-thumb': {
+                    bgcolor: alpha('#fff', 0.25),
+                    borderRadius: 4
+                  }
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'grey.300',
+                    fontWeight: 700,
+                    fontSize: '0.68rem',
+                    whiteSpace: 'nowrap',
+                    mr: 0.25,
+                    flexShrink: 0
+                  }}
+                >
+                  {tituloModeloVisualizador(tipoModeloAtomico)}
+                </Typography>
+                {modeloQuantico ? (
+                  <>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={mostrarEletrons ? <VisibilityOffIcon sx={{ fontSize: 14 }} /> : <VisibilityIcon sx={{ fontSize: 14 }} />}
+                      onClick={() => setMostrarEletrons(!mostrarEletrons)}
+                      sx={(theme) => sxBotaoOverlay3D(theme, { ativo: mostrarEletrons })}
+                    >
+                      {mostrarEletrons ? 'Ocultar elétrons' : 'Elétrons'}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setForcarNucleoDetalhado(!forcarNucleoDetalhado)}
+                      sx={(theme) => sxBotaoOverlay3D(theme, { ativo: forcarNucleoDetalhado })}
+                    >
+                      {forcarNucleoDetalhado ? 'Ocultar núcleo' : 'Núcleo'}
+                    </Button>
+                  </>
+                ) : null}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<ThreeDRotationIcon sx={{ fontSize: 14 }} />}
+                  onClick={() => setRotacaoAutomatica((v) => !v)}
+                  sx={(theme) => sxBotaoOverlay3D(theme, { ativo: rotacaoAutomatica })}
+                >
+                  {rotacaoAutomatica ? 'Parar' : 'Rotação'}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<GridOnIcon sx={{ fontSize: 14 }} />}
+                  onClick={() => setMostrarCoordenadas(!mostrarCoordenadas)}
+                  sx={(theme) => sxBotaoOverlay3D(theme, { ativo: mostrarCoordenadas })}
+                >
+                  {mostrarCoordenadas ? 'Ocultar eixos' : 'Eixos'}
+                </Button>
+                {modeloQuantico ? (
+                  <>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={(e) => setSubniveisAnchor(e.currentTarget)}
+                      sx={(theme) => sxBotaoOverlay3D(theme, { ativo: Boolean(subniveisAnchor) })}
+                    >
+                      Subníveis ▾
+                    </Button>
+                  </>
+                ) : null}
+                {dialogMobileLayout && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<VideocamIcon sx={{ fontSize: 14 }} />}
+                    onClick={() => setModoRealidadeAumentada((v) => !v)}
+                    sx={(theme) => sxBotaoOverlay3D(theme, { ativo: modoRealidadeAumentada })}
+                  >
+                    {modoRealidadeAumentada ? 'RA' : 'Câmera'}
+                  </Button>
+                )}
+              </Box>
+              <IconButton
+                aria-label="fechar"
+                onClick={handleFecharDialog}
+                size="small"
+                sx={{
+                  color: 'grey.200',
+                  flexShrink: 0,
+                  p: 0.5,
+                  bgcolor: alpha('#000', 0.42),
+                  backdropFilter: 'blur(10px)',
+                  pointerEvents: 'auto',
+                  '&:hover': { bgcolor: alpha('#000', 0.55), color: 'common.white' }
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+
             <Menu
               anchorEl={subniveisAnchor}
-              open={Boolean(subniveisAnchor)}
+              open={Boolean(modeloQuantico && subniveisAnchor)}
               onClose={(e, reason) => {
                 if (reason === 'backdropClick' || reason === 'escapeKeyDown') setSubniveisAnchor(null);
               }}
@@ -921,14 +989,15 @@ function App() {
               MenuListProps={{ onClick: (e) => e.stopPropagation() }}
               slotProps={{
                 paper: {
-                  sx: (theme) => ({
+                  sx: {
                     mt: 0.75,
                     borderRadius: 2,
-                    border: `1px solid ${alpha('#fff', 0.08)}`,
-                    bgcolor: alpha(theme.palette.background.paper, 0.98),
-                    boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
+                    border: 1,
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                     maxWidth: 'min(100vw - 24px, 320px)'
-                  })
+                  }
                 }
               }}
             >
@@ -954,99 +1023,30 @@ function App() {
                 </MenuItem>
               ))}
             </Menu>
-          </Box>
-          <Box
-            sx={{
-              width: '100%',
-              flex: dialogMobileLayout ? '1 1 auto' : undefined,
-              minHeight: dialogMobileLayout ? 0 : { xs: 420, sm: 500 },
-              height: dialogMobileLayout ? undefined : { xs: 420, sm: 500 },
-              bgcolor: modoRealidadeAumentada && dialogMobileLayout ? '#000' : '#050608',
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'row',
-              minWidth: 0
-            }}
-          >
-            <Box
-              sx={{
-                flex: 1,
-                position: 'relative',
-                minWidth: 0,
-                minHeight: 0,
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  inset: 0,
-                  pointerEvents: 'none',
-                  zIndex: 2,
-                  boxShadow: `inset 0 0 80px ${alpha('#000', modoRealidadeAumentada && dialogMobileLayout ? 0.25 : 0.45)}`,
-                  borderRadius: 0
-                }
-              }}
-            >
-              {dialogMobileLayout && (
-                <video
-                  ref={videoCameraRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    zIndex: 0,
-                    display: modoRealidadeAumentada ? 'block' : 'none',
-                    pointerEvents: 'none',
-                    backgroundColor: '#000'
-                  }}
-                />
-              )}
-              <Box
-                sx={{
-                  position: 'relative',
-                  zIndex: 1,
-                  width: '100%',
-                  height: '100%'
-                }}
-              >
-                {dialogAberto && (
-                  <Atom3D
-                    numeroAtomico={numeroAtomico}
-                    neutroes={elemento?.neutroes}
-                    mostrarEletrons={mostrarEletrons}
-                    mostrarCoordenadas={mostrarCoordenadas}
-                    rotacaoAutomatica={rotacaoAutomatica}
-                    forcarNucleoDetalhado={forcarNucleoDetalhado}
-                    subniveisVisiveis={subniveisVisiveis}
-                    fundoTransparente={Boolean(dialogMobileLayout && modoRealidadeAumentada)}
-                    zoomCamera={zoomCamera}
-                    onZoomChange={setZoomCamera}
-                  />
-                )}
-              </Box>
-            </Box>
+
             <Box
               component="aside"
               aria-label="Controlo de zoom"
               sx={{
-                flexShrink: 0,
-                width: { xs: 48, sm: 56 },
+                position: 'absolute',
+                top: '50%',
+                right: 6,
+                transform: 'translateY(-50%)',
+                zIndex: 5,
+                width: 32,
+                height: 'min(55vh, 360px)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 1,
-                py: 2,
-                px: 0.75,
-                borderLeft: `1px solid ${alpha('#fff', 0.08)}`,
-                bgcolor: alpha('#000', 0.35),
-                zIndex: 3
+                gap: 0.5,
+                py: 0.75,
+                borderRadius: 1.5,
+                bgcolor: alpha('#000', 0.38),
+                backdropFilter: 'blur(6px)'
               }}
             >
-              <ZoomInIcon sx={{ fontSize: { xs: 18, sm: 20 }, color: 'grey.400' }} aria-hidden />
+              <ZoomInIcon sx={{ fontSize: 16, color: 'grey.300' }} aria-hidden />
               <Slider
                 orientation="vertical"
                 value={cameraZParaSlider(zoomCamera)}
@@ -1057,54 +1057,16 @@ function App() {
                 aria-label="Zoom do modelo 3D"
                 sx={{
                   flex: '1 1 auto',
-                  minHeight: { xs: 100, sm: 140 },
-                  maxHeight: 'min(55vh, 320px)',
+                  minHeight: 80,
                   color: 'primary.main',
-                  '& .MuiSlider-thumb': {
-                    width: { xs: 16, sm: 18 },
-                    height: { xs: 16, sm: 18 }
-                  },
-                  '& .MuiSlider-rail': {
-                    opacity: 0.35,
-                    bgcolor: 'grey.600'
-                  }
+                  '& .MuiSlider-thumb': { width: 14, height: 14 },
+                  '& .MuiSlider-rail': { opacity: 0.35, bgcolor: 'grey.500' }
                 }}
               />
-              <ZoomOutIcon sx={{ fontSize: { xs: 18, sm: 20 }, color: 'grey.400' }} aria-hidden />
+              <ZoomOutIcon sx={{ fontSize: 16, color: 'grey.300' }} aria-hidden />
             </Box>
           </Box>
         </DialogContent>
-        <DialogActions
-          sx={{
-            px: { xs: 1.5, sm: 2.5 },
-            py: { xs: 1.5, sm: 2 },
-            flexShrink: 0,
-            borderTop: `1px solid ${alpha('#fff', 0.06)}`,
-            bgcolor: alpha('#000', 0.2),
-            justifyContent: 'flex-end',
-            pb: { xs: 'max(12px, env(safe-area-inset-bottom, 0px))', sm: 2 },
-            gap: 1
-          }}
-        >
-          <Button
-            onClick={handleFecharDialog}
-            variant="contained"
-            color="primary"
-            size={dialogMobileLayout ? 'large' : 'medium'}
-            fullWidth={dialogMobileLayout}
-            sx={(theme) => ({
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              px: dialogMobileLayout ? 2 : 2.5,
-              py: dialogMobileLayout ? 1.25 : 1,
-              minHeight: dialogMobileLayout ? 48 : undefined,
-              boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.35)}`
-            })}
-          >
-            Fechar
-          </Button>
-        </DialogActions>
       </Dialog>
     </Box>
   );

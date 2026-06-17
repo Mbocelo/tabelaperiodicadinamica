@@ -14,7 +14,7 @@ Aplicativo educacional interativo para estudo da Tabela Periódica e visualizaç
 
 ### Painel de informações do elemento
 - Mostra: símbolo, nome, número atômico, nêutrons, massa atômica, raio atômico e categoria.
-- Exibe a **configuração eletrônica** formatada.
+- Exibe a **configuração eletrônica** por ordem crescente de energia (**Pauling** / Aufbau).
 - Inclui legenda de cores para subníveis (**s, p, d, f**).
 - Campo de entrada para alterar o número atômico manualmente.
 - Botão para abrir o **modelo 3D** do elemento selecionado.
@@ -41,15 +41,11 @@ Aplicativo educacional interativo para estudo da Tabela Periódica e visualizaç
 - Podem ser ocultadas ou exibidas pelo botão dedicado no visualizador.
 
 ### Controles no visualizador 3D
-- **Ocultar/Mostrar elétrons**.
-- **Mostrar/Esconder núcleo** detalhado.
-- **Rotação automática** / **Parar rotação** (desligada por padrão ao abrir o diálogo).
-- **Mostrar/Ocultar coordenadas** (eixos e grelha).
-- Menu **Subníveis** com checkboxes para ligar/desligar `s`, `p`, `d`, `f`:
-  - Afeta **órbitais e elétrons** — só aparecem partículas dos subníveis selecionados.
-- Interação por ponteiro:
-  - Arrastar para rotacionar manualmente.
-  - Scroll/pinch para zoom.
+- Diálogo em **ecrã completo** com barra de ferramentas **sobreposta** e zoom lateral.
+- Símbolo do elemento no canto superior direito da cena.
+- Botões activos destacados a **verde**.
+- **Elétrons**, **Núcleo**, **Rotação**, **Eixos**, menu **Subníveis** (`s`, `p`, `d`, `f`).
+- Interação: arrastar (rotação), scroll/pinch (zoom), barra lateral de zoom.
 
 ### Modo RA em celular (câmera)
 - Disponível no diálogo 3D em telas móveis.
@@ -57,13 +53,20 @@ Aplicativo educacional interativo para estudo da Tabela Periódica e visualizaç
 - O átomo é renderizado com fundo transparente sobre a câmera.
 - Inclui **sombra de contato do átomo** (fixa na cena) para melhor percepção espacial.
 
-### Menu superior e páginas informativas
-- Barra com menu lateral (Drawer) contendo:
-  - Manual de uso
-  - Termos de uso
-  - Política de privacidade
-  - Sobre
-- Conteúdo aberto em diálogo próprio dentro do app.
+### Menu superior e ajuda (☰)
+
+Menu lateral com secções **Como utilizar** e **Informação**:
+
+| Item | Descrição |
+|------|-----------|
+| Início rápido | Primeiros passos |
+| Tabela periódica | Seleção, cores, scroll mobile |
+| Modelo 3D | Controlos e gestos |
+| Telemóvel e tablet | Layouts adaptados |
+| Dicas de desempenho | Optimizar o 3D |
+| Termos / Privacidade / Sobre | Informação legal e projecto |
+
+Conteúdo em `src/content/appInfoPt.js`; documentação técnica em [docs/GUIA_COMPLETO.md](docs/GUIA_COMPLETO.md).
 
 ### Responsividade
 - Layout adaptado para desktop, tablet e celular.
@@ -81,7 +84,7 @@ Aplicativo educacional interativo para estudo da Tabela Periódica e visualizaç
 
 ```
 src/
-├── main.jsx                 # Entrada React + tema MUI (escuro)
+├── main.jsx                 # Entrada React + tema MUI (claro, verde)
 ├── App.jsx                  # Orquestração: tabela, painel, diálogo 3D
 ├── components/
 │   ├── TabelaPeriodica.jsx  # Grelha periódica e legenda
@@ -115,7 +118,7 @@ Depois de `npm run dev`, abra a URL exibida no terminal (normalmente `http://loc
 
 - React 18
 - Vite
-- Material UI (MUI)
+- Material UI (MUI) — tema claro
 - Three.js
 
 ## Recomendação de uso

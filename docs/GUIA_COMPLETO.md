@@ -33,9 +33,10 @@ A aplicação funciona inteiramente no navegador (client-side). Não há servido
 | Aspeto | Detalhe |
 |--------|---------|
 | Idioma da interface | Português (PT) |
-| Tema visual | Escuro (Material UI) |
+| Tema visual | **Claro** (Material UI — verde `#2e7d32`) |
 | Elemento padrão ao abrir | Carbono (Z = 6) |
 | Dados químicos | Isótopo estável mais comum; valores educativos |
+| Configuração electrónica | Ordem crescente de energia (Pauling / Aufbau) |
 
 ---
 
@@ -51,12 +52,15 @@ A aplicação funciona inteiramente no navegador (client-side). Não há servido
 
 | Ação | Como fazer |
 |------|------------|
-| Selecionar elemento | Clique numa célula colorida |
-| Navegar em ecrãs pequenos | Deslize horizontalmente se a grelha não couber na largura |
-| Ver categorias | Consulte a legenda abaixo da tabela |
+| Selecionar elemento | Clique ou toque numa célula colorida |
+| Navegar em ecrãs pequenos | Deslize **horizontalmente** na grelha (18 colunas) |
+| Ver todos os períodos (mobile) | Deslize **verticalmente** na página |
+| Ver categorias | Consulte a legenda «Tipos de elementos» abaixo da tabela |
 | Lantanídeos / Actinídeos | Linhas dedicadas com rótulos **La:** e **Ac:** |
 
 A célula selecionada fica com **borda amarela** e brilho. A cor de fundo indica a **categoria química** (metal alcalino, halogénio, gás nobre, etc.).
+
+> **Telemóvel/tablet:** não é necessário rodar fisicamente o aparelho; o layout adapta-se à orientação (retrato ou paisagem). Ver [secção 8](#8-responsividade-e-layouts).
 
 ### 2.3 Painel do elemento selecionado
 
@@ -70,8 +74,10 @@ Após selecionar um elemento, abre-se o painel com:
 | Nêutrons | Do isótopo estável usado nos dados |
 | Massa atómica | Em unidades u |
 | Raio atómico | Em picómetros (pm) |
-| Configuração eletrónica | Notação tipo `1s² 2s² 2p²` |
-| Legenda s/p/d/f | Cores dos subníveis no modelo 3D |
+| Configuração eletrónica | Notação tipo `1s² 2s² 2p²`, por **ordem crescente de energia (Pauling)** |
+| Legenda s/p/d/4f/5f | Cores dos subníveis no modelo 3D |
+
+A ordem Pauling reflecte a sequência de preenchimento por energia (ex.: ferro `…4s² 3d⁶`, não agrupado por camada principal).
 
 **Onde aparece o painel:**
 
@@ -82,22 +88,38 @@ Após selecionar um elemento, abre-se o painel com:
 
 **Campo «Nº atómico»:** digite um valor entre 1 e 118 para mudar o elemento ativo.
 
-**Botão «Modelo 3D»:** abre o visualizador tridimensional do elemento atual.
+**Modelos atómicos** (por ordem histórica):
+
+| Modelo | Ano | Descrição resumida |
+|--------|-----|-------------------|
+| **Dalton** | 1803 | Esfera sólida indivisível |
+| **Thomson** | 1904 | «Pudim de passas» — carga positiva difusa |
+| **Rutherford-Bohr** | 1913 | Núcleo compacto + órbitas circulares |
+| **Quântico** | 1926+ | Orbitais s, p, d, f (modelo actual) |
+
+Cada botão abre o visualizador 3D em ecrã completo. Detalhes históricos e educativos: menu ☰ → **Sobre**.
 
 ### 2.4 Visualizador 3D — controlos
 
-O diálogo 3D abre em janela grande no desktop ou em **ecrã completo** no telemóvel/tablet.
+O diálogo 3D abre em **ecrã completo** (desktop e mobile), com fundo escuro (`#263238`), barra de ferramentas **sobreposta** no topo e zoom flutuante à direita.
 
-#### Barra de ferramentas
+#### Barra de ferramentas (topo)
 
 | Botão | Função |
 |-------|--------|
-| **Ocultar / Mostrar elétrons** | Esconde ou exibe todas as esferas dos elétrons |
-| **Mostrar / Esconder núcleo** | Força o núcleo detalhado (prótons e nêutrons individuais) |
-| **Rotação automática / Parar rotação** | Liga ou desliga a rotação contínua do modelo |
-| **Mostrar / Ocultar coordenadas** | Eixos X/Y/Z, etiquetas +/− e grelha de referência |
+| **Elétrons / Ocultar elétrons** | Esconde ou exibe as esferas dos elétrons |
+| **Núcleo / Ocultar núcleo** | Força o núcleo detalhado (prótons e nêutrons individuais) |
+| **Rotação / Parar** | Liga ou desliga a rotação contínua do modelo |
+| **Eixos / Ocultar eixos** | Eixos X/Y/Z, etiquetas +/− e grelha de referência |
 | **Subníveis ▾** | Menu com checkboxes para `s`, `p`, `d`, `f` |
-| **Câmera RA / RA ligado** | *(Só mobile)* Ativa câmera traseira como fundo |
+| **Câmera / RA** | *(Só mobile)* Ativa câmera traseira como fundo |
+| **✕** | Fecha o visualizador |
+
+Os botões **activos** ficam destacados a **verde** na barra sobreposta.
+
+#### Identificação do elemento
+
+No canto superior direito da cena aparecem o **símbolo** (grande), o **número atómico** e o **nome** do elemento actual, sobre fundo semitransparente.
 
 #### Menu Subníveis
 
@@ -107,14 +129,22 @@ O diálogo 3D abre em janela grande no desktop ou em **ecrã completo** no telem
 
 #### Interação com o modelo
 
-| Gestos | Efeito |
+| Gestos / controlos | Efeito |
 |--------|--------|
 | Arrastar (rato / dedo) | Roda o átomo e as coordenadas no espaço |
 | Scroll do rato | Zoom in / out |
 | Pinch (dois dedos) | Zoom in / out no telemóvel |
+| **Barra de zoom lateral** | Slider vertical à direita da cena (↑ aproxima, ↓ afasta) |
 | Rotação automática | Roda continuamente no eixo Y (quando ativada) |
 
-**Comportamento por defeito:** o átomo está **parado** ao abrir o 3D. A rotação automática desliga-se ao fechar o diálogo.
+**Comportamento por defeito:** o átomo está **parado** ao abrir o 3D. A rotação automática e o zoom resetam ao fechar o diálogo.
+
+#### Barra de zoom lateral
+
+- Fica **sempre visível** no lado direito da área 3D (desktop e mobile).
+- Ícone **+** no topo (aproximar) e **−** na base (afastar).
+- Sincronizada com scroll do rato e pinch — mover a barra ou usar gestos produz o mesmo efeito.
+- Range da câmera: Z entre **60** (muito perto) e **1000** (muito longe); valor inicial **520**.
 
 #### Núcleo — dois modos
 
@@ -129,7 +159,7 @@ No modo detalhado, prótons (vermelho) e nêutrons (cinza) movem-se ligeiramente
 
 - Eixos **X** (vermelho), **Y** (verde), **Z** (azul) com extensão positiva e negativa.
 - Etiquetas: `+X`, `−X`, `+Y`, `−Y`, `+Z`, `−Z`.
-- Grelha horizontal de referência.
+- Grelha horizontal de referência (branco/cinza).
 - Rodam **junto com o átomo** (não ficam fixas à câmera).
 
 #### Modo RA (realidade aumentada) — mobile
@@ -144,14 +174,20 @@ No modo detalhado, prótons (vermelho) e nêutrons (cinza) movem-se ligeiramente
 
 ### 2.5 Menu lateral (☰)
 
+O menu abre um painel lateral com duas secções: **Como utilizar** e **Informação**. Cada item abre um diálogo formatado com títulos, texto e listas.
+
 | Item | Conteúdo |
 |------|----------|
-| Manual de uso | Resumo das funcionalidades |
+| **Início rápido** | Primeiros passos e fluxo básico |
+| **Tabela periódica** | Selecção, cores, configuração Pauling, scroll mobile |
+| **Modelo 3D** | Controlos, gestos, zoom, RA, botões activos |
+| **Telemóvel e tablet** | Drawer inferior, layouts retrato/paisagem, menu mobile |
+| **Dicas de desempenho** | Optimizar FPS no visualizador 3D |
 | Termos de uso | Condições de utilização |
-| Política de privacidade | Tratamento de dados (app local) |
-| Sobre | Informação do projeto |
+| Política de privacidade | Dados locais, câmara RA, sem conta |
+| Sobre | Evolução dos modelos atómicos, tecnologias e documentação |
 
-Os textos estão em `src/content/appInfoPt.js` e podem ser adaptados antes de uso público.
+Os textos estão em `src/content/appInfoPt.js` (objecto `INFO_PAGES`). A documentação técnica completa está neste ficheiro (`docs/GUIA_COMPLETO.md`).
 
 ### 2.6 Fluxo típico de estudo
 
@@ -182,7 +218,7 @@ Em dispositivos mais lentos:
 | **react** | ^18.2 | Biblioteca UI; componentes funcionais com hooks |
 | **react-dom** | ^18.2 | Renderização no DOM (`createRoot`) |
 | **@mui/material** | ^7.3 | Componentes visuais: AppBar, Drawer, Dialog, Button, Paper, etc. |
-| **@mui/icons-material** | ^7.3 | Ícones: Menu, Science, Close, GridOn, ThreeDRotation, Videocam, … |
+| **@mui/icons-material** | ^7.3 | Ícones: Menu, Science, Close, GridOn, ThreeDRotation, Videocam, ZoomIn, ZoomOut, … |
 | **@emotion/react** | ^11.14 | Motor CSS-in-JS exigido pelo MUI |
 | **@emotion/styled** | ^11.14 | Estilos styled do ecossistema MUI |
 | **three** | ^0.183 | Motor WebGL: cena 3D, geometrias, materiais, luzes, animação |
@@ -213,10 +249,13 @@ Definido em `src/main.jsx`:
 
 | Token | Valor |
 |-------|-------|
-| `mode` | `dark` |
-| `primary` | `#4CAF50` (verde) |
-| `secondary` | `#ffff00` (amarelo) |
-| Fundo geral | `#1a1a1a` |
+| `mode` | `light` |
+| `primary` | `#2e7d32` (verde) |
+| `primary.light` | `#4caf50` |
+| `secondary` | `#f9a825` (amarelo — destaque de selecção) |
+| Fundo geral | `#f5f7fa` |
+| Fundo cartões | `#ffffff` |
+| Cena 3D | `#263238` (cinza-azulado escuro) |
 
 ---
 
@@ -264,7 +303,8 @@ main.jsx (ThemeProvider)
             │       └── elementoInfo → ElementoInfoCard (desktop)
             ├── Drawer inferior → ElementoInfoCard (mobile)
             └── Dialog 3D
-                    └── Atom3D.jsx
+                    ├── Atom3D.jsx
+                    └── Barra de zoom lateral (Slider vertical)
 ```
 
 ### 5.2 Estado principal (`App.jsx`)
@@ -278,6 +318,7 @@ main.jsx (ThemeProvider)
 | `mostrarEletrons` | `boolean` | Visibilidade dos elétrons |
 | `mostrarCoordenadas` | `boolean` | Eixos e grelha 3D |
 | `rotacaoAutomatica` | `boolean` | Rotação contínua do modelo |
+| `zoomCamera` | `number` | Distância Z da câmera (60–1000) |
 | `forcarNucleoDetalhado` | `boolean` | Núcleo com prótons/nêutrons |
 | `subniveisVisiveis` | `{s,p,d,f}` | Filtro de subníveis |
 | `modoRealidadeAumentada` | `boolean` | Câmera RA (mobile) |
@@ -289,9 +330,9 @@ main.jsx (ThemeProvider)
 | Breakpoint | Uso |
 |------------|-----|
 | `theme.breakpoints.up('lg')` (~1200px) | Painel lateral vs drawer inferior |
-| `theme.breakpoints.down('md')` | Dialog 3D fullscreen; botão RA |
+| `theme.breakpoints.down('md')` | Barra 3D mobile; botão RA; layout compacto |
 | CSS `@media (min-width: 1200px)` | Sidebar na tabela |
-| CSS `@media (max-width: 1024px)` | Células menores; scroll horizontal |
+| CSS `@media (max-width: 1024px)` | Layout mobile/tablet (retrato e paisagem) |
 
 ### 5.4 `TabelaPeriodica.jsx`
 
@@ -359,9 +400,15 @@ Cada entrada em `elementosQuimicos` (chave = número atómico):
 | `s` | `#00ff88` | Orbitais, elétrons, legenda |
 | `p` | `#4488ff` | Idem |
 | `d` | `#ffcc00` | Idem |
-| `f` | `#ff44aa` | Idem |
+| `f` (genérico) | `#ff44aa` | Fallback para subníveis f sem camada específica |
+| **`4f`** | `#ff44aa` (rosa) | Lantanídeos — camada 4f |
+| **`5f`** | `#ff7722` (laranja) | Actinídeos — camada 5f |
+
+Funções auxiliares: `obterCorSubnivel(sub)` e `obterCorSubnivelHex(sub)` devolvem a cor correta por subnível (`4f`, `5f`, ou tipo s/p/d/f).
 
 ### 6.4 Configuração eletrónica
+
+A distribuição segue a **regra de Aufbau** (Princípio de construção / diagrama de Moeller), com capacidade máxima por subnível segundo **Pauli** (s=2, p=6, d=10, f=14). A **regra de Hund** não é modelada — só se indica quantos elétrons existem em cada subnível, não como se distribuem nos orbitais (px, py, pz, etc.).
 
 **Ordem Aufbau** (`AUFBAU_ORDER`):
 
@@ -376,9 +423,21 @@ Cada entrada em `elementosQuimicos` (chave = número atómico):
 | Função | Entrada | Saída |
 |--------|---------|-------|
 | `obterConfiguracaoEletronica(Z)` | Número atómico | Objeto `{ '1s': 2, '2s': 2, … }` |
-| `configParaTexto(config)` | Objeto config | String `1s² 2s² 2p⁶` |
+| `configParaTexto(config)` | Objeto config | String `1s² 2s² 2p⁶` **por ordem de energia (Pauling)** |
+| `obterCorSubnivel(sub)` | Subnível (`4f`, `5f`, `2p`, …) | Cor numérica Three.js |
 
-**Exceções** (`CONFIG_EXCEPCIONAIS`): Cr, Cu, Nb, Mo, Tc, Ru, Rh, Pd, Ag, La, Ce, Gd, Pt, Au, Ac, Th, Pa, U, Np, Cm.
+**Exceções** (`CONFIG_EXCEPCIONAIS`) — configuração no estado fundamental quando difere do Aufbau puro:
+
+| Grupo | Elementos (Z) |
+|-------|----------------|
+| Metais de transição | Cr (24), Cu (29), Nb–Ag (41–47) |
+| Lantanídeos | La (57), Ce (58), Gd (64) |
+| Outros | Pt (78), Au (79) |
+| Actinídeos | Ac (89), Th (90), Pa–Np (91–93), Cm (96) |
+
+Exemplos: Cr → `4s¹ 3d⁵`; Cu → `4s¹ 3d¹⁰`; La → `5d¹ 4f⁰ 6s²`; U → `5f³ 6d¹ 7s²`.
+
+> Configuração **completa** (não condensada com gás nobre). Apenas átomo **neutro** no estado fundamental.
 
 ### 6.5 Layout da tabela (`periodosTabela`)
 
@@ -402,6 +461,10 @@ Ficheiro: `src/components/Atom3D.jsx`
 | `fundoTransparente` | `boolean` | `false` | Fundo alpha (modo RA) |
 | `mostrarCoordenadas` | `boolean` | `true` | Eixos e grelha |
 | `rotacaoAutomatica` | `boolean` | `false` | Rotação contínua |
+| `zoomCamera` | `number` | `520` | Distância Z da câmera (controlada pela barra de zoom) |
+| `onZoomChange` | `function` | — | Callback quando scroll/pinch altera o zoom |
+
+Constantes exportadas: `CAMERA_Z_MIN`, `CAMERA_Z_MAX`, `CAMERA_Z_INICIAL`, `cameraZParaSlider()`, `sliderParaCameraZ()`.
 
 ### 7.2 Cena Three.js
 
@@ -410,7 +473,7 @@ Ficheiro: `src/components/Atom3D.jsx`
 | Câmera | `PerspectiveCamera`, FOV 75°, posição Z inicial 520 |
 | Renderer | WebGL, antialias, tone mapping ACES, sRGB |
 | Grupo principal | `atomGroup` — núcleo, orbitais, elétrons, coordenadas |
-| Zoom | Z entre 60 e 1000 (scroll / pinch) |
+| Zoom | Z entre 60 e 1000 — scroll, pinch **ou barra lateral** |
 
 ### 7.3 Iluminação (`configurarIluminacao`)
 
@@ -435,16 +498,33 @@ As luzes ficam **fixas na cena**; o modelo roda sob elas, reforçando a percepç
 | Núcleo simples | `SphereGeometry(15, 32, 32)` | Cinza, semi-transparente |
 | Orbitais | Malhas por tipo s/p/d/f | `MeshPhongMaterial` translúcido |
 
-### 7.5 Formas orbitais (simplificadas)
+### 7.5 Formas orbitais (representação educativa)
 
 | Tipo | Representação visual |
 |------|---------------------|
 | **s** | Esfera centrada no núcleo |
 | **p** | Dois lobos por eixo (x, y, z) |
 | **d** | Conjunto de lobos em planos principais |
-| **f** | Oito lobos distribuídos no espaço |
+| **f** | **Sete orbitais** com formas distintas e fases +/− (cor do subnível / tom azul) |
 
-> São representações **educativas simplificadas**, não orbitais quânticos rigorosos.
+#### Orbitais f (7 tipos)
+
+Implementados conforme diagramas clássicos de química:
+
+| Orbital | Forma resumida |
+|---------|----------------|
+| f_{x(x²−3y²)} | 6 lobos no plano xy |
+| f_{y(x²−z²)} | 8 lobos entre eixos |
+| f_{xz²} | 8 lobos no plano xz |
+| f_{z³} | 2 lobos axiais em Z + **2 anéis toroidais** no centro |
+| f_{yz²} | 8 lobos no plano yz |
+| f_{xyz} | 8 lobos (um por octante 3D) |
+| f_{y(3x²−y²)} | 6 lobos no plano xy (rodados 30°) |
+
+- Elétrons f posicionados nos **lobos principais** de cada orbital (até 2 por orbital, máx. 14).
+- **4f** e **5f** usam cores diferentes (rosa vs laranja) e raios distintos no mesmo átomo (ex.: U tem ambos).
+
+> São representações **educativas simplificadas**, não soluções rigorosas da função de onda.
 
 ### 7.6 Animações
 
@@ -474,23 +554,33 @@ As luzes ficam **fixas na cena**; o modelo roda sob elas, reforçando a percepç
 
 ### Desktop (≥ 1200px)
 
-- Tabela + painel lateral do elemento.
-- Dialog 3D em janela modal centrada.
+- Tabela + painel lateral fixo do elemento (cartão à esquerda).
+- Dialog 3D em ecrã completo com barra sobreposta.
 - Sem botão de câmera RA.
 
-### Tablet / telemóvel (< 1200px)
+### Telemóvel / tablet (< 1200px)
 
-- Drawer inferior ao selecionar elemento.
-- Dialog 3D em fullscreen.
-- Botão **Câmera RA** visível.
-- Barra de controlos 3D com scroll horizontal se necessário.
+- **Drawer inferior** ao seleccionar elemento (fecha tocando fora ou no ✕).
+- Dialog 3D em **ecrã completo** com controlos sobrepostos.
+- Botão **Câmera** (RA) visível na barra 3D.
+- Barra de controlos 3D com **scroll horizontal** se não couberem todos os botões.
 - Safe areas (`env(safe-area-inset-*)`) no dialog e drawer.
+- Em **paisagem no telemóvel**, o painel do elemento usa layout compacto em duas colunas.
 
-### Tabela em mobile
+### Tabela em mobile (≤ 1024px)
 
-- Scroll horizontal na grelha 18 colunas.
-- Células com `clamp()` para texto legível.
-- Sem obrigar rotação do dispositivo.
+| Orientação | Comportamento |
+|------------|---------------|
+| **Retrato** | Grelha 18 colunas com células legíveis (`--periodic-cell-min: 36px`); scroll **horizontal** na grelha; scroll **vertical** na página para períodos, lantanídeos e legenda |
+| **Paisagem** | Células ligeiramente menores (`34px`); scroll horizontal quando necessário |
+
+Não é obrigatório rodar fisicamente o dispositivo. O título «Tabela Periódica» e o menu ☰ permanecem sempre na orientação normal do ecrã.
+
+### Menu mobile
+
+- Drawer lateral com secções «Como utilizar» e «Informação».
+- Itens com descrição curta; página activa destacada com barra verde à esquerda.
+- Diálogos de ajuda com títulos, parágrafos e listas formatadas.
 
 ---
 
@@ -595,11 +685,12 @@ Não há ficheiro `.env` nem variáveis obrigatórias. A aplicação não depend
 
 | Aspeto | Limitação |
 |--------|-----------|
-| Orbitais | Formas geométricas simplificadas |
-| Posições dos elétrons | Distribuição ilustrativa, não solução da função de onda |
+| Orbitais | Formas geométricas simplificadas (f melhorados, mas não rigorosos) |
+| Posições dos elétrons | Distribuição ilustrativa; f alinhados aos lobos principais |
+| Configuração eletrónica | Aufbau + exceções parciais; Hund não aplicada |
 | Nêutrons | Isótopo estável representativo; não há seletor de isótopo |
 | Elementos superpesados | Dados aproximados (Z > 100) |
-| Desempenho | Muitos elétrons + núcleo detalhado podem reduzir FPS |
+| Desempenho | Muitos elétrons + orbitais f + núcleo detalhado podem reduzir FPS |
 | RA | Depende de permissões e hardware do dispositivo |
 
 ### 11.2 Precisão dos dados
