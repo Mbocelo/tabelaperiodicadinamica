@@ -5,6 +5,7 @@ export const TIPOS_MODELO_ATOMICO = {
     id: 'dalton',
     label: 'Dalton',
     labelCurto: 'Dalton',
+    tituloVisualizador: 'Modelo Atômico de Dalton',
     ano: 1803,
     descricao: 'Esfera sólida indivisível (1803)'
   },
@@ -12,6 +13,7 @@ export const TIPOS_MODELO_ATOMICO = {
     id: 'thomson',
     label: 'Thomson',
     labelCurto: 'Thomson',
+    tituloVisualizador: 'Modelo Atômico de Thomson',
     ano: 1904,
     descricao: '«Pudim de passas» — carga positiva difusa (1904)'
   },
@@ -19,6 +21,7 @@ export const TIPOS_MODELO_ATOMICO = {
     id: 'rutherford-bohr',
     label: 'Rutherford-Bohr',
     labelCurto: 'Bohr',
+    tituloVisualizador: 'Modelo Atômico de Rutherford-Bohr',
     ano: 1913,
     descricao: 'Núcleo denso e elétrons em órbitas circulares (1913)'
   },
@@ -26,6 +29,7 @@ export const TIPOS_MODELO_ATOMICO = {
     id: 'quantico',
     label: 'Quântico',
     labelCurto: 'Quânt.',
+    tituloVisualizador: 'Modelo Atômico Quântico',
     ano: 1926,
     descricao: 'Orbitais s, p, d, f — modelo actual (mecânica quântica)'
   }
@@ -45,7 +49,7 @@ export function obterModeloAtomico(id) {
 
 export function tituloModeloVisualizador(id) {
   const modelo = obterModeloAtomico(id);
-  return `Modelo de ${modelo.label}`;
+  return modelo.tituloVisualizador ?? `Modelo Atômico de ${modelo.label}`;
 }
 
 export function ehModeloQuantico(tipo) {

@@ -6,6 +6,7 @@ import {
   obterCorSubnivel
 } from '../data/elementosQuimicos';
 import { COORDINATES_GROUP_NAME, criarGrupoCoordenadas } from './coordenadas3D';
+import { configurarIluminacaoInterativa, atualizarLuzPeloPointer } from './iluminacao3D';
 
 const ZOOM_THRESHOLD_NUCLEUS = 220;
 /** Câmera mais afastada ao abrir (z maior = campo mais largo / zoom mais “baixo”) */
@@ -57,33 +58,6 @@ function criarMaterialEsfera(cor, emissiveIntensity = 0.15, shininess = 30) {
     specular: 0xffffff,
     shininess
   });
-}
-
-/** Iluminação em camadas para dar volume ao átomo (luz fixa na cena, modelo roda sob ela) */
-function configurarIluminacao(scene) {
-  scene.add(new THREE.HemisphereLight(0xc8daf0, 0x12151c, 0.42));
-
-  const luzPrincipal = new THREE.DirectionalLight(0xfff8f0, 1.4);
-  luzPrincipal.position.set(150, 220, 170);
-  scene.add(luzPrincipal);
-
-  const luzPreenchimento = new THREE.DirectionalLight(0x8aa0c8, 0.55);
-  luzPreenchimento.position.set(-170, 70, -130);
-  scene.add(luzPreenchimento);
-
-  const luzContorno = new THREE.DirectionalLight(0xb0c8ff, 0.8);
-  luzContorno.position.set(-110, 90, -240);
-  scene.add(luzContorno);
-
-  const luzInferior = new THREE.DirectionalLight(0x4a5568, 0.28);
-  luzInferior.position.set(40, -220, 100);
-  scene.add(luzInferior);
-
-  scene.add(new THREE.AmbientLight(0x353545, 0.16));
-
-  const luzNucleo = new THREE.PointLight(0xff5577, 1.0, 520, 1.4);
-  luzNucleo.position.set(0, 0, 0);
-  scene.add(luzNucleo);
 }
 
 export const CAMERA_Z_MIN = 60;
@@ -711,7 +685,8 @@ export default function Atom3D({
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
-    configurarIluminacao(scene);
+    const luzes = configurarIluminacaoInterativa(scene, { comLuzNucleo: true });
+    atualizarLuzPeloPointer(luzes, {}, renderer.domElement, camera);
 
     const atomGroup = new THREE.Group();
     scene.add(atomGroup);
@@ -782,6 +757,8 @@ export default function Atom3D({
     };
 
     const handlePointerMove = (e) => {
+      atualizarLuzPeloPointer(luzes, e, renderer.domElement, camera);
+
       if (pointers.has(e.pointerId)) {
         pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }

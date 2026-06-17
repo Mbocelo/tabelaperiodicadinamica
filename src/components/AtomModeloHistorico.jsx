@@ -6,6 +6,7 @@ import {
   CAMERA_Z_MAX
 } from './Atom3D';
 import { COORDINATES_GROUP_NAME, criarGrupoCoordenadas } from './coordenadas3D';
+import { configurarIluminacaoSimples, atualizarLuzPeloPointer } from './iluminacao3D';
 
 const FUNDO_3D = 0x263238;
 const ROTACAO_VELOCIDADE = 0.005;
@@ -16,26 +17,26 @@ function hexParaCor(hex) {
   return parseInt(limpo, 16);
 }
 
-function configurarIluminacao(scene) {
-  scene.add(new THREE.HemisphereLight(0xc8daf0, 0x12151c, 0.45));
-  const principal = new THREE.DirectionalLight(0xfff8f0, 1.2);
-  principal.position.set(140, 200, 160);
-  scene.add(principal);
-  const preenchimento = new THREE.DirectionalLight(0x8aa0c8, 0.5);
-  preenchimento.position.set(-160, 60, -120);
-  scene.add(preenchimento);
-  scene.add(new THREE.AmbientLight(0x404050, 0.22));
-}
-
-function distribuirPontosEsfera(n, raio) {
+/** Elétrons uniformes no volume da esfera positiva (direcção + raio independentes) */
+function distribuirEletronsThomson(n, raioMaximo) {
   const pontos = [];
+  if (n <= 0) return pontos;
+
   const phi = Math.PI * (3 - Math.sqrt(5));
+  let passoRaio = Math.floor(n * 0.618033988749895) % n;
+  if (passoRaio === 0) passoRaio = 1;
+
   for (let i = 0; i < n; i++) {
-    const y = 1 - (i / Math.max(n - 1, 1)) * 2;
-    const r = Math.sqrt(Math.max(0, 1 - y * y));
+    const y = 1 - (2 * (i + 0.5)) / n;
+    const anel = Math.sqrt(Math.max(0, 1 - y * y));
     const theta = phi * i;
-    const f = raio * (0.35 + (i / Math.max(n, 1)) * 0.55);
-    pontos.push([Math.cos(theta) * r * f, y * f, Math.sin(theta) * r * f]);
+    const j = (i * passoRaio) % n;
+    const raio = raioMaximo * Math.cbrt((j + 0.5) / n);
+    pontos.push([
+      Math.cos(theta) * anel * raio,
+      y * raio,
+      Math.sin(theta) * anel * raio
+    ]);
   }
   return pontos;
 }
@@ -72,6 +73,58 @@ function criarAnelOrbita(raio, plano = 0, cor = 0x88aacc) {
   return new THREE.Line(geo, mat);
 }
 
+let texturaRotuloEletron = null;
+
+function obterTexturaRotuloEletron() {
+  if (texturaRotuloEletron) return texturaRotuloEletron;
+  const canvas = document.createElement('canvas');
+  const w = 56;
+  const h = 48;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    const baseY = h / 2 + 2;
+    ctx.font = '400 26px ui-monospace, Menlo, Consolas, monospace';
+    ctx.fillText('e', 4, baseY);
+
+    ctx.font = '500 15px ui-monospace, Menlo, Consolas, monospace';
+    ctx.fillText('−', 21, baseY - 9);
+  }
+  texturaRotuloEletron = new THREE.CanvasTexture(canvas);
+  texturaRotuloEletron.colorSpace = THREE.SRGBColorSpace;
+  return texturaRotuloEletron;
+}
+
+/** Etiqueta «e−» sempre visível, junto ao elétron (direcção radial) */
+function criarRotuloEletronThomson(x, y, z, raioEletron = 3.5) {
+  const len = Math.hypot(x, y, z) || 1;
+  const nx = x / len;
+  const ny = y / len;
+  const nz = z / len;
+  const offset = raioEletron + 0.35;
+
+  const mat = new THREE.SpriteMaterial({
+    map: obterTexturaRotuloEletron(),
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.center.set(0.1, 0.52);
+  sprite.scale.set(14, 11, 1);
+  sprite.position.set(nx * offset, ny * offset, nz * offset);
+  sprite.renderOrder = 20;
+  sprite.userData = { thomsonRotulo: true };
+  return sprite;
+}
+
 function limparGrupo(group) {
   const filhosRemoviveis = group.children.filter((child) => child.name !== COORDINATES_GROUP_NAME);
   for (const child of filhosRemoviveis) {
@@ -79,7 +132,12 @@ function limparGrupo(group) {
     child.traverse((obj) => {
       if (obj.geometry) obj.geometry.dispose();
       if (obj.material) {
-        if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
+        const map = obj.material.map;
+        if (map && map !== texturaRotuloEletron) map.dispose();
+        if (Array.isArray(obj.material)) obj.material.forEach((m) => {
+          if (m.map && m.map !== texturaRotuloEletron) m.map.dispose();
+          m.dispose();
+        });
         else obj.material.dispose();
       }
     });
@@ -114,32 +172,41 @@ function construirThomson(group, Z) {
       opacity: 0.38,
       specular: 0xffccaa,
       shininess: 40,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      depthWrite: false
     })
   );
+  esferaPositiva.renderOrder = 0;
   group.add(esferaPositiva);
 
-  const geoEletron = new THREE.SphereGeometry(3.5, 24, 24);
+  const raioEletron = 3.5;
+  const geoEletron = new THREE.SphereGeometry(raioEletron, 24, 24);
   const matEletron = new THREE.MeshPhongMaterial({
     color: 0x3399ff,
     emissive: 0x1166cc,
     emissiveIntensity: 0.25,
     specular: 0xffffff,
-    shininess: 80
+    shininess: 80,
+    depthWrite: true
   });
 
-  const pontos = distribuirPontosEsfera(Z, raioPositivo * 0.78);
+  const pontos = distribuirEletronsThomson(Z, raioPositivo * 0.82);
   pontos.forEach(([x, y, z], i) => {
+    const grupoEletron = new THREE.Group();
+    grupoEletron.renderOrder = 10;
     const e = new THREE.Mesh(geoEletron, matEletron);
-    e.position.set(x, y, z);
-    e.userData = {
+    e.renderOrder = 10;
+    grupoEletron.add(e);
+    grupoEletron.add(criarRotuloEletronThomson(x, y, z, raioEletron));
+    grupoEletron.position.set(x, y, z);
+    grupoEletron.userData = {
       thomson: true,
       baseX: x,
       baseY: y,
       baseZ: z,
       fase: i * 0.7
     };
-    group.add(e);
+    group.add(grupoEletron);
   });
 }
 
@@ -275,7 +342,8 @@ export default function AtomModeloHistorico({
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
-    configurarIluminacao(scene);
+    const luzes = configurarIluminacaoSimples(scene);
+    atualizarLuzPeloPointer(luzes, {}, renderer.domElement, camera);
 
     const modelGroup = new THREE.Group();
     scene.add(modelGroup);
@@ -322,6 +390,8 @@ export default function AtomModeloHistorico({
     };
 
     const handlePointerMove = (e) => {
+      atualizarLuzPeloPointer(luzes, e, renderer.domElement, camera);
+
       if (pointers.has(e.pointerId)) {
         pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }
