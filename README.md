@@ -1,126 +1,215 @@
 # Tabela Periódica Dinâmica
 
-Aplicativo educacional interativo para estudo da Tabela Periódica e visualização de modelo atômico 3D com orbitais por subnível.
+Aplicação web educacional em **português** para explorar os **118 elementos** da tabela periódica, consultar propriedades químicas e comparar **quatro modelos atómicos** em visualização 3D interactiva — tudo no navegador, sem registo nem servidor.
 
-📖 **Documentação completa:** [docs/GUIA_COMPLETO.md](docs/GUIA_COMPLETO.md) — guia de utilização, stack tecnológica, arquitetura, dados químicos e desenvolvimento.
+📖 **Documentação completa:** [docs/GUIA_COMPLETO.md](docs/GUIA_COMPLETO.md) — utilização, stack, arquitectura, dados químicos, desenvolvimento e publicação.
+
+| Aspeto | Detalhe |
+|--------|---------|
+| Idioma | Português (PT) |
+| Tema | Claro (Material UI — verde `#2e7d32`) |
+| Elemento inicial | Carbono (Z = 6) |
+| Configuração electrónica | Ordem crescente de energia (**Pauling** / Aufbau) |
+| Dados químicos | Isótopo estável; fins educativos |
+
+---
 
 ## Funcionalidades
 
-### Tabela periódica interativa
-- Exibe os **118 elementos**, incluindo séries de **lantanídeos** e **actinídeos**.
-- Células coloridas por **categoria química** (metais, halogênios, gases nobres etc.).
-- Seleção de elemento com destaque visual.
-- Legenda de categorias e linhas dedicadas para lantanídeos/actinídeos.
+### Tabela periódica interactiva
 
-### Painel de informações do elemento
-- Mostra: símbolo, nome, número atômico, nêutrons, massa atômica, raio atômico e categoria.
-- Exibe a **configuração eletrônica** por ordem crescente de energia (**Pauling** / Aufbau).
-- Inclui legenda de cores para subníveis (**s, p, d, f**).
-- Campo de entrada para alterar o número atômico manualmente.
-- Botão para abrir o **modelo 3D** do elemento selecionado.
+- **118 elementos**, incluindo **lantanídeos** (La:) e **actinídeos** (Ac:).
+- Células coloridas por **categoria química** (metal alcalino, halogénio, gás nobre, etc.).
+- Selecção com **borda amarela** e brilho.
+- Legenda «Tipos de elementos» abaixo da grelha.
+- **Mobile/tablet:** scroll horizontal na grelha (18 colunas) e scroll vertical na página; adapta-se a retrato e paisagem.
 
-### Modelo atômico 3D (Three.js)
-- Núcleo em dois modos:
-  - **Simples** (esfera única) quando distante.
-  - **Detalhado** (prótons e nêutrons animados) quando aproximado ou forçado por botão.
-- Orbitais e elétrons distribuídos por subnível com animação contínua.
-- Elétrons, prótons e nêutrons renderizados como **esferas lisas** com o mesmo tipo de material e iluminação.
-- Formas orbitais:
-  - `s`: esférico
-  - `p`: halteres em eixos principais
-  - `d`: distribuição lobular simplificada
-  - `f`: distribuição multi-lobular simplificada
-- **Iluminação em camadas** (hemisférica, principal, preenchimento, contorno e luz no núcleo) para dar profundidade e volume ao modelo.
-- O átomo inicia **parado**; a rotação é opcional e controlada pelo utilizador.
+### Painel do elemento seleccionado
 
-### Sistema de coordenadas 3D
-- Eixos **X, Y e Z** com extensão positiva e negativa a partir da origem.
-- Etiquetas nos seis extremos: `+X`, `−X`, `+Y`, `−Y`, `+Z`, `−Z`.
-- Grelha de referência no plano horizontal.
-- As coordenadas **rodam com o modelo** (mesmo grupo de transformação do átomo).
-- Podem ser ocultadas ou exibidas pelo botão dedicado no visualizador.
+Aparece **à esquerda** no desktop (≥ 1200px) ou em **drawer inferior** no telemóvel/tablet.
 
-### Controles no visualizador 3D
-- Diálogo em **ecrã completo** com barra de ferramentas **sobreposta** e zoom lateral.
-- Símbolo do elemento no canto superior direito da cena.
-- Botões activos destacados a **verde**.
-- **Elétrons**, **Núcleo**, **Rotação**, **Eixos**, menu **Subníveis** (`s`, `p`, `d`, `f`).
-- Interação: arrastar (rotação), scroll/pinch (zoom), barra lateral de zoom.
+| Campo | Conteúdo |
+|-------|----------|
+| Símbolo, nome, categoria | Identificação e tipo na tabela |
+| Nº atómico, nêutrons, massa, raio | Propriedades do isótopo estável |
+| Configuração electrónica | Notação `1s² 2s² …` por ordem **Pauling** (ex.: Fe `…4s² 3d⁶`) |
+| Legenda s / p / d / 4f / 5f | Cores dos subníveis no modelo quântico |
+| Campo «Nº atómico» | Alterar elemento activo (1–118) |
 
-### Modo RA em celular (câmera)
-- Disponível no diálogo 3D em telas móveis.
-- Ativa vídeo da câmera traseira como fundo do modelo.
-- O átomo é renderizado com fundo transparente sobre a câmera.
-- Inclui **sombra de contato do átomo** (fixa na cena) para melhor percepção espacial.
+#### Modelos atómicos (ordem histórica)
 
-### Menu superior e ajuda (☰)
+Quatro botões abrem o visualizador 3D em ecrã completo:
 
-Menu lateral com secções **Como utilizar** e **Informação**:
+| Botão | Ano | Representação |
+|-------|-----|---------------|
+| **Dalton** | 1803 | Esfera sólida indivisível (cor da categoria) |
+| **Thomson** | 1904 | «Pudim de passas» — carga positiva difusa + elétrons |
+| **Rutherford-Bohr** | 1913 | Núcleo compacto + elétrons em órbitas circulares |
+| **Quântico** | 1926+ | Núcleo, orbitais s/p/d/f e elétrons animados |
 
-| Item | Descrição |
-|------|-----------|
+História e detalhes de cada modelo: menu ☰ → **Sobre**.
+
+---
+
+### Visualizador 3D (Three.js)
+
+Diálogo em **ecrã completo** (desktop e mobile), fundo `#263238`, barra de ferramentas **sobreposta** e zoom flutuante à direita.
+
+#### Identificação na cena
+
+- Título **«Modelo de …»** na barra superior (ex.: Modelo de Dalton).
+- Símbolo grande, número atómico e nome no canto superior direito.
+
+#### Modelo quântico
+
+- **Núcleo** simples (afastado) ou **detalhado** (prótons/nêutrons animados).
+- Orbitais **s, p, d, f** com formas educativas simplificadas; cores distintas para **4f** (rosa) e **5f** (laranja).
+- Elétrons, prótons e nêutrons como esferas com iluminação em camadas.
+- Átomo **parado** ao abrir; rotação opcional.
+
+#### Modelos históricos (Dalton, Thomson, Bohr)
+
+- Visualizações didácticas simplificadas por época.
+- **Rotação** e **eixos** disponíveis; elétrons animados (Thomson e Bohr).
+- Bohr: elétrons alinhados às linhas circulares das órbitas.
+
+#### Coordenadas 3D (todos os modelos)
+
+- Eixos **X** vermelho, **Y** verde, **Z** azul com etiquetas `+X` … `−Z`.
+- Grelha horizontal de referência.
+- Rodam **junto com o modelo**; botão **Eixos / Ocultar eixos** em todos os modelos.
+
+#### Controlos
+
+| Controlos | Disponível |
+|-----------|------------|
+| Elétrons, Núcleo, Subníveis ▾ | Só modelo **Quântico** |
+| Rotação, Eixos | **Todos** os modelos |
+| Câmera RA | Mobile — todos os modelos |
+| Zoom (scroll, pinch, barra lateral) | **Todos** |
+| Botões activos a **verde** | Barra sobreposta |
+
+#### Modo RA (telefóvel/tablet)
+
+- Câmara traseira como fundo; átomo com fundo transparente.
+- Sombra de contacto no «chão» da cena.
+- Requer `localhost` ou **HTTPS** e permissão de câmara.
+
+---
+
+### Menu e ajuda (☰)
+
+Secções **Como utilizar** e **Informação**, com diálogos formatados:
+
+| Item | Conteúdo |
+|------|----------|
 | Início rápido | Primeiros passos |
-| Tabela periódica | Seleção, cores, scroll mobile |
-| Modelo 3D | Controlos e gestos |
-| Telemóvel e tablet | Layouts adaptados |
-| Dicas de desempenho | Optimizar o 3D |
-| Termos / Privacidade / Sobre | Informação legal e projecto |
+| Tabela periódica | Selecção, Pauling, scroll mobile |
+| Modelo 3D | Controlos, gestos, RA, eixos |
+| Telemóvel e tablet | Drawer, layouts, menu |
+| Dicas de desempenho | Optimizar FPS no 3D |
+| Termos / Privacidade | Informação legal |
+| Sobre | Evolução dos modelos atómicos, tecnologias, docs |
 
-Conteúdo em `src/content/appInfoPt.js`; documentação técnica em [docs/GUIA_COMPLETO.md](docs/GUIA_COMPLETO.md).
+Textos em `src/content/appInfoPt.js`.
+
+---
 
 ### Responsividade
-- Layout adaptado para desktop, tablet e celular.
-- Em telas grandes, painel de elemento fica em área lateral fixa.
-- Em telas pequenas, informações do elemento são exibidas em Drawer inferior.
-- Diálogo 3D em ecrã completo em telemóvel e tablet.
-- A tabela em retrato móvel funciona no fluxo normal, com **scroll horizontal** quando necessário (sem exigir rotação do aparelho).
-- Células da tabela ajustadas para melhor leitura no celular.
 
-### Regras eletrônicas
-- Construção eletrônica baseada na regra de Aufbau.
-- Inclui principais exceções conhecidas (como Cr, Cu, Ag, Au, entre outras).
+| Dispositivo | Comportamento |
+|-------------|---------------|
+| Desktop (≥ 1200px) | Tabela + cartão lateral do elemento |
+| Telemóvel / tablet | Drawer inferior; 3D fullscreen; barra com scroll horizontal |
+| Paisagem mobile | Painel compacto em duas colunas; tabela com scroll se necessário |
 
-## Estrutura do projeto
+---
+
+### Dados químicos
+
+- Regra de **Aufbau** com excepções (`Cr`, `Cu`, lantanídeos, actinídeos, etc.).
+- Configuração por **ordem de energia (Pauling)**, não agrupada só por camada.
+- **10 categorias** com cores na tabela e no cartão do elemento.
+- Valores educativos — para rigor científico consulte IUPAC, NIST, etc.
+
+---
+
+## Estrutura do projecto
 
 ```
-src/
-├── main.jsx                 # Entrada React + tema MUI (claro, verde)
-├── App.jsx                  # Orquestração: tabela, painel, diálogo 3D
-├── components/
-│   ├── TabelaPeriodica.jsx  # Grelha periódica e legenda
-│   ├── Atom3D.jsx           # Visualização Three.js
-│   └── AppMenu.jsx          # Menu lateral e páginas informativas
-├── data/
-│   └── elementosQuimicos.js # Dados dos 118 elementos e lógica Aufbau
-└── content/
-    └── appInfoPt.js         # Textos de ajuda e legais (PT)
+tabelaperiodicadinamica/
+├── docs/
+│   └── GUIA_COMPLETO.md       # Documentação de referência
+├── src/
+│   ├── main.jsx               # React + tema MUI (claro)
+│   ├── App.jsx                # Estado global, painel, diálogo 3D
+│   ├── components/
+│   │   ├── TabelaPeriodica.jsx
+│   │   ├── TabelaPeriodica.css
+│   │   ├── Atom3D.jsx         # Modelo quântico (Three.js)
+│   │   ├── AtomModeloHistorico.jsx  # Dalton, Thomson, Bohr
+│   │   ├── coordenadas3D.js   # Eixos e grelha partilhados
+│   │   └── AppMenu.jsx        # Menu ☰ e páginas de ajuda
+│   ├── data/
+│   │   ├── elementosQuimicos.js   # 118 elementos, Aufbau, cores
+│   │   └── tiposModeloAtomico.js  # Tipos e ordem histórica
+│   └── content/
+│       └── appInfoPt.js       # Textos PT do menu
+├── package.json
+└── vite.config.js
 ```
+
+---
 
 ## Instalação e execução
 
 ### Pré-requisitos
-- Node.js 16+
+
+- Node.js **16+**
 - npm
 
 ### Comandos
 
 ```bash
+git clone <url-do-repositorio>
+cd tabelaperiodicadinamica
 npm install
-npm run dev
-npm run build
-npm run preview
+npm run dev      # http://localhost:5173
+npm run build    # saída em dist/
+npm run preview  # testar build local
 npm run lint
 ```
 
-Depois de `npm run dev`, abra a URL exibida no terminal (normalmente `http://localhost:5173`).
+---
 
 ## Tecnologias
 
-- React 18
-- Vite
-- Material UI (MUI) — tema claro
-- Three.js
+| Pacote | Uso |
+|--------|-----|
+| **React 18** | Interface e estado |
+| **Vite 4** | Dev server, HMR, build |
+| **Material UI 7** | Componentes, tema claro |
+| **Three.js** | Cena 3D WebGL |
+| **PropTypes** | Validação de props |
 
-## Recomendação de uso
+---
 
-Para dispositivos mais modestos, caso o 3D fique pesado, reduza elementos visuais no visualizador (por exemplo, ocultando elétrons, coordenadas ou subníveis não necessários para o estudo).
+## Publicação
+
+SPA estática — pode ser hospedada em GitHub Pages, Netlify, Vercel ou qualquer servidor de ficheiros. **Modo RA** em produção exige **HTTPS** (excepto `localhost`).
+
+---
+
+## Limitações educativas
+
+- Orbitais e modelos históricos são **representações simplificadas**, não simulações rigorosas.
+- Sem selector de isótopo; dados aproximados para Z > 100.
+- Desempenho pode reduzir com muitos elétrons + orbitais f + núcleo detalhado.
+
+**Dica:** oculte elétrons, eixos ou filtre subníveis para melhor fluidez em dispositivos modestos.
+
+---
+
+## Licença e créditos
+
+Projecto educacional open source. Adapte textos legais em `appInfoPt.js` antes de uso público.
