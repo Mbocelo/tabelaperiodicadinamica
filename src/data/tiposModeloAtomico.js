@@ -47,3 +47,7 @@ export function tituloModeloVisualizador(id) {
   const modelo = obterModeloAtomico(id);
   return `Modelo de ${modelo.label}`;
 }
+
+export function ehModeloQuantico(tipo) {
+  return !tipo || tipo === 'quantico';
+}
