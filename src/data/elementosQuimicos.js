@@ -153,6 +153,16 @@ export function compararSubniveisPorEnergia(a, b) {
   return la - lb;
 }
 
+/** Compara subníveis por camada principal n, depois s → p → d → f */
+export function compararSubniveisPorNivel(a, b) {
+  const na = parseInt(a[0], 10);
+  const nb = parseInt(b[0], 10);
+  if (na !== nb) return na - nb;
+  const la = L_QUANTICO[a[a.length - 1]] ?? 0;
+  const lb = L_QUANTICO[b[b.length - 1]] ?? 0;
+  return la - lb;
+}
+
 // Ordem crescente de energia / preenchimento (Aufbau, diagrama de Pauling)
 export const AUFBAU_ORDER = [
   '1s', '2s', '2p', '3s', '3p', '4s', '3d', '4p', '5s', '4d', '5p', '6s', '4f', '5d', '6p', '7s', '5f', '6d', '7p'
@@ -234,11 +244,12 @@ export function obterConfiguracaoEletronica(numeroAtomico) {
 const SUPERSCRIPTS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 export function configParaTexto(config) {
   const partes = [];
-  for (const sub of ORDEM_ENERGIA) {
-    if (config[sub] > 0) {
-      const expoente = config[sub].toString().split('').map((c) => SUPERSCRIPTS[parseInt(c, 10)] || c).join('');
-      partes.push(sub + expoente);
-    }
+  const subniveis = Object.keys(config)
+    .filter((sub) => config[sub] > 0)
+    .sort(compararSubniveisPorNivel);
+  for (const sub of subniveis) {
+    const expoente = config[sub].toString().split('').map((c) => SUPERSCRIPTS[parseInt(c, 10)] || c).join('');
+    partes.push(sub + expoente);
   }
   return partes.join(' ');
 }

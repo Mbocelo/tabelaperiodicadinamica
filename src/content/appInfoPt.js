@@ -49,7 +49,7 @@ export const INFO_PAGES = {
       },
       {
         heading: 'Configuração electrónica',
-        text: 'No painel do elemento, a configuração é apresentada por ordem crescente de energia (diagrama de Pauling / Aufbau). Exemplo: o ferro aparece como …4s² 3d⁶, reflectindo a ordem de preenchimento por energia, não apenas por número de camada.'
+        text: 'No painel do elemento, a configuração é apresentada por nível de energia (camada principal n): subníveis agrupados por n, na ordem s → p → d → f. Exemplo: o ferro aparece como …3d⁶ 4s², com o 3d antes do 4s dentro da mesma camada electrónica.'
       },
       {
         heading: 'Navegação em ecrãs pequenos',
@@ -276,7 +276,7 @@ export const INFO_PAGES = {
           'Base: mecânica quântica (Schrödinger, Heisenberg, Pauli, entre outros).',
           'Ideia central: elétrons descritos por orbitais (probabilidade), subníveis s, p, d e f.',
           'Na aplicação: núcleo detalhado, orbitais coloridos, elétrons animados, filtros por subnível e coordenadas 3D.',
-          'Configuração electrónica no painel: ordem crescente de energia (diagrama de Pauling / Aufbau).'
+          'Configuração electrónica no painel: por nível de energia (camada principal n).'
         ]
       },
       {

@@ -132,7 +132,7 @@ function ElementoInfoCard({
             color="text.disabled"
             sx={{ display: 'block', fontSize: layoutPaisagemDrawer ? '0.58rem' : '0.68rem', mt: 0.15 }}
           >
-            ordem crescente de energia (Pauling)
+            por nível de energia (camada n)
           </Typography>
         </Typography>
         <Typography
