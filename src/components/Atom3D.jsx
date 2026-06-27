@@ -5,8 +5,14 @@ import {
   AUFBAU_ORDER,
   obterCorSubnivel
 } from '../data/elementosQuimicos';
+import { ORBITAIS_D, ORBITAIS_P } from '../data/orbitaisOrientacoes';
 import { COORDINATES_GROUP_NAME, criarGrupoCoordenadas } from './coordenadas3D';
-import { configurarIluminacaoInterativa, atualizarLuzPeloPointer } from './iluminacao3D';
+import { configurarIluminacaoCena } from './iluminacao3D';
+import {
+  criarMaterialEletronComLetra,
+  criarMaterialNucleonComLetra,
+  orientarMalhaRadial
+} from './particulasTextura3D';
 
 const ZOOM_THRESHOLD_NUCLEUS = 220;
 /** Câmera mais afastada ao abrir (z maior = campo mais largo / zoom mais “baixo”) */
@@ -228,12 +234,16 @@ function criarGrupoOrbitaisF(radius, corBase) {
   const lobeGeo = new THREE.SphereGeometry(raioLobo, 16, 16);
 
   for (const orbital of obterDefinicoesOrbitaisF()) {
+    const subGrupo = new THREE.Group();
+    subGrupo.userData.orientacaoOrbital = orbital.id;
+
     for (const lobo of orbital.lobos) {
       const [dx, dy, dz] = lobo.dir;
       const mesh = new THREE.Mesh(lobeGeo, criarMaterialLoboF(corBase, lobo.fase));
       mesh.position.set(dx * dist, dy * dist, dz * dist);
       if (lobo.escala) mesh.scale.set(lobo.escala[0], lobo.escala[1], lobo.escala[2]);
-      group.add(mesh);
+      mesh.userData.orientacaoOrbital = orbital.id;
+      subGrupo.add(mesh);
     }
 
     if (orbital.aneis) {
@@ -244,73 +254,335 @@ function criarGrupoOrbitaisF(radius, corBase) {
         const mesh = new THREE.Mesh(torusGeo, criarMaterialLoboF(corBase, anel.fase, 0.38));
         mesh.rotation.x = Math.PI / 2;
         mesh.position.z = anel.z * radius;
-        group.add(mesh);
+        mesh.userData.orientacaoOrbital = orbital.id;
+        subGrupo.add(mesh);
       }
     }
+
+    group.add(subGrupo);
   }
 
   return group;
 }
 
-function criarFormaOrbital(tipo, radius, cor) {
-  const group = new THREE.Group();
-  const material = new THREE.MeshPhongMaterial({
+function adicionarGrupoLobos(group, lobeGeo, material, positions, orientacaoId) {
+  const subGrupo = new THREE.Group();
+  subGrupo.userData.orientacaoOrbital = orientacaoId;
+  for (const pos of positions) {
+    const m = new THREE.Mesh(lobeGeo, material.clone());
+    m.position.set(pos[0], pos[1], pos[2]);
+    m.userData.orientacaoOrbital = orientacaoId;
+    subGrupo.add(m);
+  }
+  group.add(subGrupo);
+}
+
+/** Orbitais s são esferas envolventes — opacidade baixa para não ocultar p, d, f por trás */
+const OPACIDADE_ORBITAL = { s: 0.09, p: 0.28, d: 0.30, f: 0.32 };
+
+function criarMaterialLoboP(corBase, fase) {
+  const cor = corFaseLobo(corBase, fase);
+  return new THREE.MeshPhongMaterial({
     color: cor,
     emissive: cor,
-    emissiveIntensity: 0.07,
+    emissiveIntensity: fase >= 0 ? 0.1 : 0.07,
+    specular: 0xffffff,
+    shininess: 56,
+    transparent: true,
+    opacity: OPACIDADE_ORBITAL.p,
+    side: THREE.DoubleSide
+  });
+}
+
+/** Proporções dos orbitais p */
+const P_ORBITAL = {
+  gapNucleo: 0.12,
+  alturaCorpo: 0.52,
+  raioMax: 0.24
+};
+
+/** Lóbulo p num único Lathe: corpo + calota hemisférica contínua (sem costura) */
+function criarGeometriaLoboPUnificado(alturaCorpo, raioMax) {
+  const pts = [];
+  const yTopo = alturaCorpo + raioMax;
+
+  const segmentosCorpo = 34;
+  for (let i = 0; i <= segmentosCorpo; i++) {
+    const u = i / segmentosCorpo;
+    const y = u * alturaCorpo;
+    let r;
+    if (u <= 0.001) {
+      r = 0;
+    } else if (u < 0.06) {
+      r = raioMax * (u / 0.06) * 0.07;
+    } else {
+      const t = (u - 0.06) / 0.94;
+      r = raioMax * (0.06 + 0.94 * Math.pow(Math.sin(t * Math.PI * 0.5), 0.42));
+    }
+    pts.push(new THREE.Vector2(r, y));
+  }
+  pts[pts.length - 1] = new THREE.Vector2(raioMax, alturaCorpo);
+
+  const segmentosCap = 22;
+  for (let i = 1; i <= segmentosCap; i++) {
+    const dy = (i / segmentosCap) * raioMax;
+    const y = alturaCorpo + dy;
+    const r = Math.sqrt(Math.max(0, raioMax * raioMax - dy * dy));
+    pts.push(new THREE.Vector2(r, y));
+  }
+
+  pts[0] = new THREE.Vector2(0, 0);
+  pts[pts.length - 1] = new THREE.Vector2(0, yTopo);
+
+  const geo = new THREE.LatheGeometry(pts, 36);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function orientarLoboP(mesh, eixo, sinal) {
+  if (eixo === 'x') {
+    mesh.rotation.z = sinal > 0 ? -Math.PI / 2 : Math.PI / 2;
+  } else if (eixo === 'y') {
+    mesh.rotation.x = sinal > 0 ? 0 : Math.PI;
+  } else {
+    // +Z: local +Y → mundo +Z; −Z: local +Y → mundo −Z
+    mesh.rotation.x = sinal > 0 ? Math.PI / 2 : -Math.PI / 2;
+  }
+}
+
+function posicionarLoboP(mesh, eixo, sinal, gap) {
+  const d = sinal * gap;
+  if (eixo === 'x') mesh.position.set(d, 0, 0);
+  else if (eixo === 'y') mesh.position.set(0, d, 0);
+  else mesh.position.set(0, 0, d);
+}
+
+function parametrosOrbitalP(shellRadius) {
+  const raioMax = shellRadius * P_ORBITAL.raioMax;
+  const gap = shellRadius * P_ORBITAL.gapNucleo;
+  const alturaCorpo = shellRadius * P_ORBITAL.alturaCorpo;
+  return { gap, raioMax, alturaCorpo };
+}
+
+function distanciaEletronOrbitalP(shellRadius) {
+  const { gap, raioMax, alturaCorpo } = parametrosOrbitalP(shellRadius);
+  return gap + alturaCorpo * 0.58 + raioMax * 0.42;
+}
+
+/** Centros dos lóbulos d — alinhados com criarFormaOrbital */
+function obterCentrosLobosD(shellRadius) {
+  const dist = shellRadius * 0.45;
+  const a = dist * 0.7;
+  return {
+    dz2: [[0, 0, dist], [0, 0, -dist]],
+    'dx2-y2': [[dist, 0, 0], [-dist, 0, 0], [0, dist, 0], [0, -dist, 0]],
+    dxy: [[a, a, 0], [-a, -a, 0], [a, -a, 0], [-a, a, 0]],
+    dxz: [[a, 0, a], [-a, 0, -a], [a, 0, -a], [-a, 0, a]],
+    dyz: [[0, a, a], [0, -a, -a], [0, a, -a], [0, -a, a]]
+  };
+}
+
+function raioLoboD(shellRadius) {
+  return shellRadius * 0.35 * 0.65;
+}
+
+function raioLoboF(shellRadius) {
+  return shellRadius * 0.17;
+}
+
+function baseTangenteAoCentro(centro) {
+  const len = Math.hypot(centro[0], centro[1], centro[2]) || 1;
+  const dx = centro[0] / len;
+  const dy = centro[1] / len;
+  const dz = centro[2] / len;
+  const ref = Math.abs(dz) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  const ux = dy * ref[2] - dz * ref[1];
+  const uy = dz * ref[0] - dx * ref[2];
+  const uz = dx * ref[1] - dy * ref[0];
+  const uLen = Math.hypot(ux, uy, uz) || 1;
+  const u = [ux / uLen, uy / uLen, uz / uLen];
+  const vx = dy * u[2] - dz * u[1];
+  const vy = dz * u[0] - dx * u[2];
+  const vz = dx * u[1] - dy * u[0];
+  return { u, v: [vx, vy, vz] };
+}
+
+function vetorEixoP(orientacao) {
+  if (orientacao === 'px') return [1, 0, 0];
+  if (orientacao === 'py') return [0, 1, 0];
+  return [0, 0, 1];
+}
+
+function posicaoEletronOrbitalS(data) {
+  const r = data.radius;
+  return [
+    r * Math.cos(data.angle2) * Math.cos(data.angle1),
+    r * Math.cos(data.angle2) * Math.sin(data.angle1),
+    r * Math.sin(data.angle2)
+  ];
+}
+
+function posicaoEletronOrbitalP(data) {
+  const { gap, raioMax, alturaCorpo } = parametrosOrbitalP(data.shellRadius);
+  const extensao = alturaCorpo + raioMax;
+  const minDist = gap + extensao * 0.22;
+  const maxDist = gap + extensao * 0.9;
+  const t = (Math.sin(data.faseOscilacao) + 1) * 0.5;
+  const dist = minDist + t * (maxDist - minDist);
+  const eixo = vetorEixoP(data.orientacaoOrbital);
+  const sinal = data.sinalLobo;
+  const wobble = raioMax * 0.22 * Math.cos(data.faseOscilacao * 1.7 + data.perpFase);
+  let px = 0;
+  let py = 0;
+  let pz = 0;
+  if (data.orientacaoOrbital === 'px') {
+    py = wobble * Math.cos(data.perpFase);
+    pz = wobble * Math.sin(data.perpFase);
+  } else if (data.orientacaoOrbital === 'py') {
+    px = wobble * Math.cos(data.perpFase);
+    pz = wobble * Math.sin(data.perpFase);
+  } else {
+    px = wobble * Math.cos(data.perpFase);
+    py = wobble * Math.sin(data.perpFase);
+  }
+  return [
+    eixo[0] * dist * sinal + px,
+    eixo[1] * dist * sinal + py,
+    eixo[2] * dist * sinal + pz
+  ];
+}
+
+function posicaoEletronLoboDf(data) {
+  const { u, v } = baseTangenteAoCentro(data.centroLobo);
+  const amp = data.raioLobo * 0.42 * (0.55 + 0.45 * Math.sin(data.faseOscilacao));
+  const c = Math.cos(data.perpFase);
+  const s = Math.sin(data.perpFase);
+  return [
+    data.centroLobo[0] + (u[0] * c + v[0] * s) * amp,
+    data.centroLobo[1] + (u[1] * c + v[1] * s) * amp,
+    data.centroLobo[2] + (u[2] * c + v[2] * s) * amp
+  ];
+}
+
+function posicaoEletronAnimada(data) {
+  if (data.modoAnimacao === 'lobo-p') return posicaoEletronOrbitalP(data);
+  if (data.modoAnimacao === 'lobo-df') return posicaoEletronLoboDf(data);
+  return posicaoEletronOrbitalS(data);
+}
+
+function criarUserDataAnimacaoEletron(tipo, orientacao, shellRadius, posInicial, sublevelIndex, electronIndex, sub) {
+  const base = {
+    isElectron: true,
+    tipoSubnivel: tipo,
+    orientacaoOrbital: orientacao,
+    shellRadius,
+    shellIndex: sublevelIndex,
+    electronIndex,
+    sublevel: sub,
+    speed: 0.012 + sublevelIndex * 0.003,
+    transitionProgress: 1.0,
+    transitionDuration: 1000,
+    transitionCounter: 1000,
+    startPos: null,
+    targetPos: null
+  };
+
+  if (tipo === 's') {
+    const r = shellRadius * (0.5 + Math.random() * 0.42);
+    return {
+      ...base,
+      modoAnimacao: 'esfera-s',
+      radius: r,
+      angle1: Math.random() * Math.PI * 2,
+      angle2: (Math.random() - 0.5) * Math.PI * 0.85,
+      targetAngle1: undefined,
+      targetAngle2: undefined
+    };
+  }
+
+  if (tipo === 'p') {
+    const eixo = vetorEixoP(orientacao);
+    const sinal = posInicial[0] * eixo[0] + posInicial[1] * eixo[1] + posInicial[2] * eixo[2] >= 0 ? 1 : -1;
+    return {
+      ...base,
+      modoAnimacao: 'lobo-p',
+      sinalLobo: sinal,
+      faseOscilacao: Math.random() * Math.PI * 2,
+      perpFase: Math.random() * Math.PI * 2
+    };
+  }
+
+  const raioLobo = tipo === 'd' ? raioLoboD(shellRadius) : raioLoboF(shellRadius);
+  return {
+    ...base,
+    modoAnimacao: 'lobo-df',
+    centroLobo: [...posInicial],
+    raioLobo,
+    faseOscilacao: Math.random() * Math.PI * 2,
+    perpFase: Math.random() * Math.PI * 2
+  };
+}
+
+function adicionarOrbitalPCompleto(group, cor, orientacaoId, eixo, shellRadius) {
+  const { gap, raioMax, alturaCorpo } = parametrosOrbitalP(shellRadius);
+  const geo = criarGeometriaLoboPUnificado(alturaCorpo, raioMax);
+  const subGrupo = new THREE.Group();
+  subGrupo.userData.orientacaoOrbital = orientacaoId;
+
+  for (const sinal of [1, -1]) {
+    const mesh = new THREE.Mesh(geo, criarMaterialLoboP(cor, sinal));
+    orientarLoboP(mesh, eixo, sinal);
+    posicionarLoboP(mesh, eixo, sinal, gap);
+    mesh.userData.orientacaoOrbital = orientacaoId;
+    subGrupo.add(mesh);
+  }
+  group.add(subGrupo);
+}
+
+function criarMaterialOrbital(tipo, cor) {
+  const opacity = OPACIDADE_ORBITAL[tipo] ?? 0.28;
+  return new THREE.MeshPhongMaterial({
+    color: cor,
+    emissive: cor,
+    emissiveIntensity: tipo === 's' ? 0.04 : 0.07,
     specular: 0xffffff,
     shininess: 48,
     transparent: true,
-    opacity: 0.28,
+    opacity,
+    depthWrite: tipo !== 's',
     side: THREE.DoubleSide
   });
+}
+
+function criarFormaOrbital(tipo, radius, cor) {
+  const group = new THREE.Group();
+  const material = criarMaterialOrbital(tipo, cor);
   const r = radius * 0.35;
 
   if (tipo === 's') {
     const geo = new THREE.SphereGeometry(radius, 32, 32);
-    group.add(new THREE.Mesh(geo, material));
+    const mesh = new THREE.Mesh(geo, material);
+    mesh.renderOrder = 0;
+    mesh.userData.orientacaoOrbital = 's';
+    group.userData.orientacaoOrbital = 's';
+    group.add(mesh);
   } else if (tipo === 'p') {
-    const dist = radius * 0.55;
-    const lobeGeo = new THREE.SphereGeometry(r, 16, 16);
-    const eixos = [
-      [[dist, 0, 0], [-dist, 0, 0]],
-      [[0, dist, 0], [0, -dist, 0]],
-      [[0, 0, dist], [0, 0, -dist]]
-    ];
-    for (const par of eixos) {
-      for (const pos of par) {
-        const m = new THREE.Mesh(lobeGeo, material.clone());
-        m.position.set(pos[0], pos[1], pos[2]);
-        group.add(m);
-      }
-    }
+    adicionarOrbitalPCompleto(group, cor, 'px', 'x', radius);
+    adicionarOrbitalPCompleto(group, cor, 'py', 'y', radius);
+    adicionarOrbitalPCompleto(group, cor, 'pz', 'z', radius);
   } else if (tipo === 'd') {
     const dist = radius * 0.45;
     const lobeGeo = new THREE.SphereGeometry(r * 0.65, 12, 12);
-    const dz2 = [[0, 0, dist], [0, 0, -dist]];
-    for (const pos of dz2) {
-      const m = new THREE.Mesh(lobeGeo, material.clone());
-      m.position.set(pos[0], pos[1], pos[2]);
-      group.add(m);
-    }
-    const dx2y2 = [[dist, 0, 0], [-dist, 0, 0], [0, dist, 0], [0, -dist, 0]];
-    for (const pos of dx2y2) {
-      const m = new THREE.Mesh(lobeGeo, material.clone());
-      m.position.set(pos[0], pos[1], pos[2]);
-      group.add(m);
-    }
     const a = dist * 0.7;
-    const quadLobes = [
-      [[a, a, 0], [-a, -a, 0], [a, -a, 0], [-a, a, 0]],
-      [[a, 0, a], [-a, 0, -a], [a, 0, -a], [-a, 0, a]],
-      [[0, a, a], [0, -a, -a], [0, a, -a], [0, -a, a]]
+    const gruposD = [
+      { id: 'dz2', positions: [[0, 0, dist], [0, 0, -dist]] },
+      { id: 'dx2-y2', positions: [[dist, 0, 0], [-dist, 0, 0], [0, dist, 0], [0, -dist, 0]] },
+      { id: 'dxy', positions: [[a, a, 0], [-a, -a, 0], [a, -a, 0], [-a, a, 0]] },
+      { id: 'dxz', positions: [[a, 0, a], [-a, 0, -a], [a, 0, -a], [-a, 0, a]] },
+      { id: 'dyz', positions: [[0, a, a], [0, -a, -a], [0, a, -a], [0, -a, a]] }
     ];
-    for (const quartet of quadLobes) {
-      for (const pos of quartet) {
-        const m = new THREE.Mesh(lobeGeo, material.clone());
-        m.position.set(pos[0], pos[1], pos[2]);
-        group.add(m);
-      }
+    for (const { id, positions } of gruposD) {
+      adicionarGrupoLobos(group, lobeGeo, material, positions, id);
     }
   } else if (tipo === 'f') {
     group.add(criarGrupoOrbitaisF(radius, cor));
@@ -321,38 +593,46 @@ function criarFormaOrbital(tipo, radius, cor) {
 
 function obterPosicoesSubnivel(tipo, qtd, radius) {
   const pos = [];
-  const r = radius * 0.98;
 
   if (tipo === 's') {
-    const dirs = [[0, 0, 1], [0, 0, -1]];
     for (let i = 0; i < qtd; i++) {
-      const d = dirs[i % 2];
-      pos.push([d[0] * r, d[1] * r, d[2] * r]);
+      const r = radius * (0.55 + (i % 3) * 0.12);
+      const theta = ((i + 0.5) / Math.max(qtd, 1)) * Math.PI * 2;
+      const phi = Math.PI * 0.35 + (i % 2) * 0.4;
+      pos.push({
+        pos: [r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)],
+        orientacao: 's'
+      });
     }
   } else if (tipo === 'p') {
-    const eixos = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    const distLobo = distanciaEletronOrbitalP(radius);
     for (let i = 0; i < qtd; i++) {
-      const eixo = eixos[Math.floor(i / 2) % 3];
+      const orientacao = ORBITAIS_P[Math.floor(i / 2) % ORBITAIS_P.length];
+      const eixo = vetorEixoP(orientacao);
       const sinal = i % 2 === 0 ? 1 : -1;
-      pos.push([eixo[0] * r * sinal, eixo[1] * r * sinal, eixo[2] * r * sinal]);
+      pos.push({
+        pos: [eixo[0] * distLobo * sinal, eixo[1] * distLobo * sinal, eixo[2] * distLobo * sinal],
+        orientacao
+      });
     }
   } else if (tipo === 'd') {
-    const orientacoes = [
-      [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0],
-      [1, 0, 1], [-1, 0, -1], [0, 1, 1], [0, -1, -1],
-      [0, 0, 1], [0, 0, -1]
-    ];
+    const centros = obterCentrosLobosD(radius);
     for (let i = 0; i < qtd; i++) {
-      const o = orientacoes[i];
-      const norm = Math.sqrt(o[0] ** 2 + o[1] ** 2 + o[2] ** 2) || 1;
-      pos.push([o[0] * r / norm, o[1] * r / norm, o[2] * r / norm]);
+      const orientacao = ORBITAIS_D[Math.floor(i / 2) % ORBITAIS_D.length];
+      const sitios = centros[orientacao];
+      const sitio = sitios[i % sitios.length];
+      pos.push({ pos: [...sitio], orientacao });
     }
   } else if (tipo === 'f') {
+    const dist = radius * 0.58;
     const orbitais = obterDefinicoesOrbitaisF();
     for (let i = 0; i < qtd; i++) {
       const orbital = orbitais[Math.floor(i / 2) % orbitais.length];
-      const sitio = orbital.sitiosEletron[i % 2];
-      pos.push([sitio[0] * r, sitio[1] * r, sitio[2] * r]);
+      const dir = orbital.sitiosEletron[i % orbital.sitiosEletron.length];
+      pos.push({
+        pos: [dir[0] * dist, dir[1] * dist, dir[2] * dist],
+        orientacao: orbital.id
+      });
     }
   }
   return pos;
@@ -379,12 +659,16 @@ export default function Atom3D({
   mostrarEletrons = true,
   forcarNucleoDetalhado = false,
   subniveisVisiveis = { s: true, p: true, d: true, f: true },
+  nivelEnergiaQuantico = null,
+  orbitaisOrientacaoVisiveis = null,
   /** Fundo transparente para sobrepor o vídeo da câmera (modo RA em celular) */
   fundoTransparente = false,
   mostrarCoordenadas = true,
   rotacaoAutomatica = false,
   zoomCamera,
-  onZoomChange
+  onZoomChange,
+  /** Zoom máximo no átomo — abre vista dedicada do núcleo */
+  onZoomLimiteNucleo
 }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
@@ -400,10 +684,12 @@ export default function Atom3D({
   const forcarNucleoRef = useRef(forcarNucleoDetalhado);
   const rotacaoAutomaticaRef = useRef(rotacaoAutomatica);
   const onZoomChangeRef = useRef(onZoomChange);
+  const onZoomLimiteNucleoRef = useRef(onZoomLimiteNucleo);
 
   forcarNucleoRef.current = forcarNucleoDetalhado;
   rotacaoAutomaticaRef.current = rotacaoAutomatica;
   onZoomChangeRef.current = onZoomChange;
+  onZoomLimiteNucleoRef.current = onZoomLimiteNucleo;
 
   const desenharAtomo = (scene, atomGroup, num, nNeutroes) => {
     if (!atomGroup || !scene) return;
@@ -437,8 +723,8 @@ export default function Atom3D({
     const nucleonRadius = Math.max(1.0, 3.5 - Math.log(totalNucleons + 1) * 0.5);
     const nucleusRadius = 12;
     const particleGeo = new THREE.SphereGeometry(nucleonRadius, ESFERA_SEGMENTOS, ESFERA_SEGMENTOS);
-    const protonMat = criarMaterialEsfera(0xe11d48, 0.15, 30);
-    const neutronMat = criarMaterialEsfera(0x94a3b8, 0.05, 20);
+    const protonMat = criarMaterialNucleonComLetra('p');
+    const neutronMat = criarMaterialNucleonComLetra('n');
 
     const posicoes = distribuirNucleons(totalNucleons, nucleusRadius);
     const maxSpeed = 0.15;
@@ -449,8 +735,9 @@ export default function Atom3D({
     nucleusDetailed.visible = false;
 
     for (let i = 0; i < num; i++) {
-      const p = new THREE.Mesh(particleGeo, protonMat.clone());
+      const p = new THREE.Mesh(particleGeo, protonMat);
       p.position.set(posicoes[i][0], posicoes[i][1], posicoes[i][2]);
+      orientarMalhaRadial(p, posicoes[i][0], posicoes[i][1], posicoes[i][2]);
       p.userData = {
         tipo: 'proton',
         vx: (Math.random() - 0.5) * maxSpeed,
@@ -461,8 +748,9 @@ export default function Atom3D({
       nucleusDetailed.add(p);
     }
     for (let i = num; i < totalNucleons; i++) {
-      const n = new THREE.Mesh(particleGeo, neutronMat.clone());
+      const n = new THREE.Mesh(particleGeo, neutronMat);
       n.position.set(posicoes[i][0], posicoes[i][1], posicoes[i][2]);
+      orientarMalhaRadial(n, posicoes[i][0], posicoes[i][1], posicoes[i][2]);
       n.userData = {
         tipo: 'neutron',
         vx: (Math.random() - 0.5) * maxSpeed,
@@ -478,6 +766,8 @@ export default function Atom3D({
 
     const config = obterConfiguracaoEletronica(num);
     const electronGeometry = new THREE.SphereGeometry(RAIO_ELETRON, ESFERA_SEGMENTOS, ESFERA_SEGMENTOS);
+    const electronMaterial = criarMaterialEletronComLetra();
+
     let sublevelIndex = 0;
 
     for (const sub of AUFBAU_ORDER) {
@@ -492,40 +782,20 @@ export default function Atom3D({
       const shell = criarFormaOrbital(tipo, baseRadius, cor);
       shell.userData = { isSublevelShell: true, tipo, sub };
       shell.visible = subniveisVisiveis[tipo] !== false;
+      shell.renderOrder = tipo === 's' ? 0 : 1;
       atomGroup.add(shell);
 
       const posicoesElectron = obterPosicoesSubnivel(tipo, qtd, baseRadius);
 
       for (let e = 0; e < posicoesElectron.length; e++) {
-        const [x, y, z] = posicoesElectron[e];
-        const electronMaterial = criarMaterialEsfera(cor, 0.15, 30);
-        electronMaterial.transparent = true;
-        electronMaterial.opacity = 1.0;
-        const electron = new THREE.Mesh(electronGeometry, electronMaterial);
-        electron.position.set(x, y, z);
-        const r = Math.sqrt(x * x + y * y + z * z);
-        const angle1 = Math.atan2(y, x);
-        const angle2 = Math.asin(Math.max(-1, Math.min(1, z / r)));
+        const { pos, orientacao } = posicoesElectron[e];
+        const electron = new THREE.Mesh(electronGeometry, electronMaterial.clone());
+        const animData = criarUserDataAnimacaoEletron(tipo, orientacao, baseRadius, pos, sublevelIndex, e, sub);
+        const posAnim = posicaoEletronAnimada(animData);
+        electron.position.set(posAnim[0], posAnim[1], posAnim[2]);
+        orientarMalhaRadial(electron, posAnim[0], posAnim[1], posAnim[2]);
         electron.visible = mostrarEletrons && subniveisVisiveis[tipo] !== false;
-        electron.userData = {
-          isElectron: true,
-          tipoSubnivel: tipo,
-          radius: r,
-          angle1,
-          angle2,
-          speed: 0.008 + sublevelIndex * 0.003,
-          rotationSpeed: 0.02,
-          targetAngle1: angle1,
-          targetAngle2: angle2,
-          startAngle1: undefined,
-          startAngle2: undefined,
-          transitionProgress: 1.0,
-          transitionDuration: 1000,
-          transitionCounter: 1000,
-          shellIndex: sublevelIndex,
-          electronIndex: e,
-          sublevel: sub
-        };
+        electron.userData = animData;
         atomGroup.add(electron);
       }
       sublevelIndex++;
@@ -572,23 +842,96 @@ export default function Atom3D({
       ud.vx = Math.max(-maxV, Math.min(maxV, ud.vx));
       ud.vy = Math.max(-maxV, Math.min(maxV, ud.vy));
       ud.vz = Math.max(-maxV, Math.min(maxV, ud.vz));
+      orientarMalhaRadial(nucleon, nucleon.position.x, nucleon.position.y, nucleon.position.z);
     });
   };
 
   const aplicarVisibilidadeSubniveis = () => {
     const atomGroup = atomGroupRef.current;
     if (!atomGroup) return;
+
+    const nivelAtivo = (sub) => {
+      if (nivelEnergiaQuantico == null) return true;
+      return parseInt(sub.charAt(0), 10) === nivelEnergiaQuantico;
+    };
+
+    const orientacaoAtiva = (orientacao) => {
+      if (!orientacao) return true;
+      if (!orbitaisOrientacaoVisiveis) return true;
+      return orbitaisOrientacaoVisiveis[orientacao] !== false;
+    };
+
     atomGroup.children.forEach((child) => {
       if (child.userData?.isSublevelShell && child.userData.tipo) {
-        child.visible = subniveisVisiveis[child.userData.tipo] !== false;
+        const { tipo, sub } = child.userData;
+        const baseVisivel = nivelAtivo(sub) && subniveisVisiveis[tipo] !== false;
+        if (tipo === 's') {
+          child.visible = baseVisivel && orientacaoAtiva('s');
+          return;
+        }
+        child.visible = baseVisivel;
+        if (!baseVisivel) return;
+        child.traverse((obj) => {
+          const orientacao = obj.userData?.orientacaoOrbital;
+          if (orientacao) {
+            obj.visible = orientacaoAtiva(orientacao);
+          }
+        });
         return;
       }
       if (child.userData?.isElectron) {
         const tipo = child.userData.tipoSubnivel;
+        const sub = child.userData.sublevel;
+        const orientacao = child.userData.orientacaoOrbital;
         const subnivelAtivo = tipo ? subniveisVisiveis[tipo] !== false : true;
-        child.visible = mostrarEletrons && subnivelAtivo;
+        child.visible = mostrarEletrons
+          && subnivelAtivo
+          && nivelAtivo(sub)
+          && orientacaoAtiva(orientacao);
       }
     });
+  };
+
+  const prepararTransicaoEletron = (data) => {
+    data.transitionCounter = 0;
+    data.transitionDuration = 80 + Math.random() * 60;
+    if (data.modoAnimacao === 'esfera-s') {
+      data.startAngle1 = data.angle1;
+      data.startAngle2 = data.angle2;
+      data.targetAngle1 = data.angle1 + (Math.random() - 0.5) * Math.PI * 0.8;
+      data.targetAngle2 = Math.max(-Math.PI * 0.42, Math.min(Math.PI * 0.42,
+        data.angle2 + (Math.random() - 0.5) * Math.PI * 0.35));
+      data.radius = data.shellRadius * (0.45 + Math.random() * 0.48);
+    } else {
+      data.startFaseOscilacao = data.faseOscilacao;
+      data.startPerpFase = data.perpFase;
+      const deltaFase = data.modoAnimacao === 'lobo-p' ? Math.PI * 0.6 : Math.PI;
+      data.targetFaseOscilacao = data.faseOscilacao + (Math.random() - 0.5) * deltaFase;
+      data.targetPerpFase = data.perpFase + (Math.random() - 0.5) * Math.PI * 0.5;
+    }
+  };
+
+  const posicaoEletronTransicao = (data, t) => {
+    if (data.modoAnimacao === 'esfera-s') {
+      const cur1 = data.startAngle1 + (data.targetAngle1 - data.startAngle1) * t;
+      const cur2 = data.startAngle2 + (data.targetAngle2 - data.startAngle2) * t;
+      const r = data.radius;
+      return [
+        r * Math.cos(cur2) * Math.cos(cur1),
+        r * Math.cos(cur2) * Math.sin(cur1),
+        r * Math.sin(cur2)
+      ];
+    }
+    const fase = data.startFaseOscilacao + (data.targetFaseOscilacao - data.startFaseOscilacao) * t;
+    const perp = data.startPerpFase + (data.targetPerpFase - data.startPerpFase) * t;
+    const savedFase = data.faseOscilacao;
+    const savedPerp = data.perpFase;
+    data.faseOscilacao = fase;
+    data.perpFase = perp;
+    const pos = posicaoEletronAnimada(data);
+    data.faseOscilacao = savedFase;
+    data.perpFase = savedPerp;
+    return pos;
   };
 
   const animateElectrons = (group) => {
@@ -597,60 +940,49 @@ export default function Atom3D({
       if (child.userData?.isElectron && child.visible) {
         const data = child.userData;
         const material = child.material;
-        data.transitionCounter++;
+
         if (data.transitionCounter < data.transitionDuration) {
+          data.transitionCounter++;
           const t = data.transitionCounter / data.transitionDuration;
           if (t < 0.5) {
-            const fadeOutProgress = t * 2;
-            data.transitionProgress = 1.0 - fadeOutProgress;
-            if (fadeOutProgress < 0.1 && data.startAngle1 === undefined) {
-              data.startAngle1 = data.angle1;
-              data.startAngle2 = data.angle2;
-              data.targetAngle1 = data.angle1 + (Math.random() - 0.5) * Math.PI * 1.5;
-              data.targetAngle2 = data.angle2 + (Math.random() - 0.5) * Math.PI * 0.5;
+            data.transitionProgress = 1.0 - t * 2;
+            if (data.modoAnimacao === 'esfera-s') {
+              data.angle1 += data.speed * 0.35;
+            } else {
+              data.faseOscilacao += data.speed * 0.35;
             }
-            data.angle1 += data.speed * 0.5;
-            data.angle2 += data.rotationSpeed * 0.05;
-            child.position.set(
-              data.radius * Math.cos(data.angle2) * Math.cos(data.angle1),
-              data.radius * Math.cos(data.angle2) * Math.sin(data.angle1),
-              data.radius * Math.sin(data.angle2)
-            );
+            const pos = posicaoEletronAnimada(data);
+            child.position.set(pos[0], pos[1], pos[2]);
           } else {
-            const fadeInProgress = (t - 0.5) * 2;
-            data.transitionProgress = fadeInProgress;
-            const lerpFactor = fadeInProgress * fadeInProgress;
-            const startAngle1 = data.startAngle1 ?? data.angle1;
-            const startAngle2 = data.startAngle2 ?? data.angle2;
-            const currentAngle1 = startAngle1 + (data.targetAngle1 - startAngle1) * lerpFactor;
-            const currentAngle2 = startAngle2 + (data.targetAngle2 - startAngle2) * lerpFactor;
-            child.position.set(
-              data.radius * Math.cos(currentAngle2) * Math.cos(currentAngle1),
-              data.radius * Math.cos(currentAngle2) * Math.sin(currentAngle1),
-              data.radius * Math.sin(currentAngle2)
-            );
-            if (fadeInProgress >= 0.99) {
-              data.angle1 = data.targetAngle1;
-              data.angle2 = data.targetAngle2;
-              data.startAngle1 = undefined;
-              data.startAngle2 = undefined;
+            const fadeIn = (t - 0.5) * 2;
+            data.transitionProgress = fadeIn;
+            const pos = posicaoEletronTransicao(data, fadeIn * fadeIn);
+            child.position.set(pos[0], pos[1], pos[2]);
+            if (fadeIn >= 0.99) {
+              if (data.modoAnimacao === 'esfera-s') {
+                data.angle1 = data.targetAngle1;
+                data.angle2 = data.targetAngle2;
+              } else {
+                data.faseOscilacao = data.targetFaseOscilacao;
+                data.perpFase = data.targetPerpFase;
+              }
+              data.transitionCounter = data.transitionDuration;
             }
           }
-          material.opacity = data.transitionProgress;
+          orientarMalhaRadial(child, child.position.x, child.position.y, child.position.z);
+          material.opacity = Math.max(0.15, data.transitionProgress);
         } else {
-          if (Math.random() < 0.02) {
-            data.transitionCounter = 0;
-            data.transitionDuration = 80 + Math.random() * 60;
-            data.startAngle1 = undefined;
-            data.startAngle2 = undefined;
+          if (Math.random() < 0.018) prepararTransicaoEletron(data);
+          if (data.modoAnimacao === 'esfera-s') {
+            data.angle1 += data.speed;
+            data.angle2 += data.speed * 0.08;
+          } else {
+            data.faseOscilacao += data.speed;
+            data.perpFase += data.speed * 0.12;
           }
-          data.angle1 += data.speed;
-          data.angle2 += data.rotationSpeed * 0.1;
-          child.position.set(
-            data.radius * Math.cos(data.angle2) * Math.cos(data.angle1),
-            data.radius * Math.cos(data.angle2) * Math.sin(data.angle1),
-            data.radius * Math.sin(data.angle2)
-          );
+          const pos = posicaoEletronAnimada(data);
+          child.position.set(pos[0], pos[1], pos[2]);
+          orientarMalhaRadial(child, pos[0], pos[1], pos[2]);
           material.opacity = 1.0;
         }
       }
@@ -685,8 +1017,7 @@ export default function Atom3D({
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
-    const luzes = configurarIluminacaoInterativa(scene, { comLuzNucleo: true });
-    atualizarLuzPeloPointer(luzes, {}, renderer.domElement, camera);
+    configurarIluminacaoCena(scene, { comLuzNucleo: true });
 
     const atomGroup = new THREE.Group();
     scene.add(atomGroup);
@@ -708,8 +1039,16 @@ export default function Atom3D({
       onZoomChangeRef.current?.(camera.position.z);
     };
 
-    const aplicarLimiteZoom = () => {
+    const aplicarLimiteZoom = (tentativaAproximar = false) => {
+      const zAntes = camera.position.z;
       camera.position.z = Math.max(CAMERA_Z_MIN, Math.min(CAMERA_Z_MAX, camera.position.z));
+      if (
+        tentativaAproximar
+        && zAntes <= CAMERA_Z_MIN + 0.5
+        && camera.position.z <= CAMERA_Z_MIN + 0.5
+      ) {
+        onZoomLimiteNucleoRef.current?.();
+      }
       notificarZoom();
     };
 
@@ -757,8 +1096,6 @@ export default function Atom3D({
     };
 
     const handlePointerMove = (e) => {
-      atualizarLuzPeloPointer(luzes, e, renderer.domElement, camera);
-
       if (pointers.has(e.pointerId)) {
         pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }
@@ -769,7 +1106,7 @@ export default function Atom3D({
         if (lastPinchDistance > 0 && dist > 0) {
           const factor = dist / lastPinchDistance;
           camera.position.z /= factor;
-          aplicarLimiteZoom();
+          aplicarLimiteZoom(factor > 1);
         }
         lastPinchDistance = dist;
         return;
@@ -788,10 +1125,11 @@ export default function Atom3D({
 
     const handleWheel = (e) => {
       e.preventDefault();
+      const aproximar = e.deltaY < 0;
       const zoomDirection = e.deltaY > 0 ? 1 : -1;
       const step = e.ctrlKey ? 0.06 : 0.1;
       camera.position.z += zoomDirection * step * camera.position.z * 0.1;
-      aplicarLimiteZoom();
+      aplicarLimiteZoom(aproximar);
     };
 
     renderer.domElement.addEventListener('pointerdown', handlePointerDown);
@@ -912,7 +1250,7 @@ export default function Atom3D({
 
   useEffect(() => {
     aplicarVisibilidadeSubniveis();
-  }, [mostrarEletrons, subniveisVisiveis]);
+  }, [mostrarEletrons, subniveisVisiveis, nivelEnergiaQuantico, orbitaisOrientacaoVisiveis]);
 
   useEffect(() => {
     const group = coordenadasGroupRef.current;

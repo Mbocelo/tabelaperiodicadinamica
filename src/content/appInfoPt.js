@@ -65,16 +65,19 @@ export const INFO_PAGES = {
   modelo3d: {
     title: 'Modelo 3D',
     intro:
-      'O visualizador mostra o átomo com núcleo, orbitais por subnível (s, p, d, f) e elétrons animados. Abre em ecrã completo com barra de ferramentas sobreposta.',
+      'O visualizador mostra o átomo com núcleo, orbitais por subnível (s, p, d, f) e elétrons animados. Abre em ecrã completo com barra de ferramentas sobreposta. No modelo quântico, os orbitais têm aspecto de nuvem de probabilidade e os elétrons movem-se dentro do lóbulo correspondente.',
     sections: [
       {
         heading: 'Barra de ferramentas (topo)',
         bullets: [
-          'Elétrons — mostra ou oculta as esferas dos elétrons.',
-          'Núcleo — força o modo detalhado (prótons e nêutrons individuais).',
+          'Elétrons — mostra ou oculta as esferas dos elétrons (etiqueta e⁻).',
+          'Núcleo — força o modo detalhado (prótons p⁺ e nêutrons n individuais).',
           'Rotação — liga ou desliga a rotação automática contínua.',
           'Eixos — mostra ou oculta coordenadas X/Y/Z e grelha.',
-          'Subníveis ▾ — filtra quais tipos s, p, d, f são visíveis.',
+          'Subníveis ▾ — filtra tipos s, p, d, f (órbitais e elétrons).',
+          'Níveis ▾ — filtra pela camada principal n (ex.: só n=2); só no modelo quântico.',
+          'Orbitais ▾ — filtra orientações (pₓ, pᵧ, d_xy, orbitais f, …); só no modelo quântico.',
+          'Níveis ▾ — no modelo Bohr, destaca uma camada de órbita (n=1, n=2, …).',
           'Câmera (só mobile) — activa realidade aumentada com a câmara traseira.'
         ]
       },
@@ -84,12 +87,22 @@ export const INFO_PAGES = {
           'Arrastar (rato ou dedo) — roda o modelo no espaço.',
           'Scroll do rato ou pinch — aproxima ou afasta.',
           'Barra de zoom lateral (direita) — slider vertical; + no topo, − na base.',
+          'Zoom máximo no átomo — abre automaticamente a vista ampliada só do núcleo.',
           'O símbolo do elemento aparece no canto superior direito da cena.'
         ]
       },
       {
         heading: 'Núcleo',
-        text: 'Por defeito, com a câmara afastada vê-se uma esfera simples. Ao aproximar o zoom ou activar «Núcleo», aparecem prótons (vermelho) e nêutrons (cinza) com movimento suave.'
+        text: 'Com a câmara afastada vê-se uma esfera simples. Ao aproximar o zoom ou activar «Núcleo», aparecem prótons (vermelho, p⁺) e nêutrons (cinza, n) com movimento suave. Ao atingir o zoom máximo, abre-se uma segunda tela dedicada ao núcleo, com zoom extra para examinar cada núcleon — use «Átomo» ou afaste o zoom ao máximo para voltar.'
+      },
+      {
+        heading: 'Orbitais e elétrons (modelo quântico)',
+        bullets: [
+          'Orbitais desenhados como nuvens semi-transparentes (densidade de probabilidade).',
+          'Elétrons (e⁻) animados dentro do orbital ou lóbulo a que pertencem — não vagueiam por todo o átomo.',
+          'Lóbulos de fase negativa aparecem num tom azulado (como nos diagramas de química).',
+          'Combine Subníveis, Níveis e Orbitais para isolar um subnível (ex.: só 2pₓ).'
+        ]
       },
       {
         heading: 'Coordenadas',
@@ -164,7 +177,7 @@ export const INFO_PAGES = {
         bullets: [
           'Oculte elétrons se só precisar de ver a forma dos orbitais.',
           'Desligue os eixos de coordenadas.',
-          'Filtre subníveis — marque apenas o tipo que quer estudar (ex.: só «d»).',
+          'Filtre subníveis, níveis (n) ou orbitais individuais — menos partículas visíveis = melhor FPS.',
           'Evite o modo RA em aparelhos antigos.',
           'Desactive a rotação automática se notar lentidão.'
         ]
@@ -266,7 +279,7 @@ export const INFO_PAGES = {
         bullets: [
           'Rutherford: núcleo pequeno, denso e positivo; quase toda a massa concentrada no centro.',
           'Bohr (1913): elétrons em órbitas circulares quantizadas, com níveis de energia discretos.',
-          'Na aplicação: núcleo vermelho + anéis de órbita + elétrons a circular por camadas (2, 8, 18…).',
+          'Na aplicação: núcleo vermelho + anéis de órbita + elétrons a circular por camadas (2, 8, 18…). Menu Níveis ▾ para destacar uma camada n.',
           'Limite histórico: não explica completamente elementos com muitos elétrons nem a forma dos orbitais.'
         ]
       },
@@ -275,7 +288,7 @@ export const INFO_PAGES = {
         bullets: [
           'Base: mecânica quântica (Schrödinger, Heisenberg, Pauli, entre outros).',
           'Ideia central: elétrons descritos por orbitais (probabilidade), subníveis s, p, d e f.',
-          'Na aplicação: núcleo detalhado, orbitais coloridos, elétrons animados, filtros por subnível e coordenadas 3D.',
+          'Na aplicação: núcleo detalhado (p⁺/n), orbitais esfumaçados, elétrons e⁻ dentro dos lóbulos, filtros Subníveis/Níveis/Orbitais, vista ampliada do núcleo ao zoom máximo, coordenadas 3D.',
           'Configuração electrónica no painel: por nível de energia (camada principal n).'
         ]
       },

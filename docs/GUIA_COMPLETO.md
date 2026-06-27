@@ -111,7 +111,9 @@ O diálogo 3D abre em **ecrã completo** (desktop e mobile), com fundo escuro (`
 | **Núcleo / Ocultar núcleo** | Força o núcleo detalhado (prótons e nêutrons individuais) |
 | **Rotação / Parar** | Liga ou desliga a rotação contínua do modelo |
 | **Eixos / Ocultar eixos** | Eixos X/Y/Z, etiquetas +/− e grelha de referência |
-| **Subníveis ▾** | Menu com checkboxes para `s`, `p`, `d`, `f` |
+| **Subníveis ▾** | Menu com checkboxes para `s`, `p`, `d`, `f` *(só quântico)* |
+| **Níveis ▾** | Filtra pela camada principal *n* (todos / n=1, n=2, …) *(quântico)* ou destaca camada Bohr *(Bohr)* |
+| **Orbitais ▾** | Filtra orientações: pₓ, pᵧ, p_z, d_xy, …, orbitais f *(só quântico)* |
 | **Câmera / RA** | *(Só mobile)* Ativa câmera traseira como fundo |
 | **✕** | Fecha o visualizador |
 
@@ -121,11 +123,28 @@ Os botões **activos** ficam destacados a **verde** na barra sobreposta.
 
 No canto superior direito da cena aparecem o **símbolo** (grande), o **número atómico** e o **nome** do elemento actual, sobre fundo semitransparente.
 
-#### Menu Subníveis
+#### Menu Subníveis *(modelo quântico)*
 
 - Cada subnível (`s`, `p`, `d`, `f`) pode ser ligado ou desligado independentemente.
 - Afeta **órbitais e elétrons**: só são visíveis as partículas dos subníveis marcados.
 - Exemplo: marcar apenas `p` mostra só elétrons e orbitais do tipo p (2p, 3p, …).
+
+#### Menu Níveis *(modelo quântico)*
+
+- Filtra pela **camada principal** *n* (número quântico principal).
+- Opção «Todos os níveis» ou seleccionar `n=1`, `n=2`, … conforme os níveis ocupados no elemento.
+- Combina com Subníveis e Orbitais — ex.: só **1s** = Subníveis `s` + Níveis `n=1`.
+
+#### Menu Orbitais *(modelo quântico)*
+
+- Checkboxes por **orientação orbital**: pₓ, pᵧ, p_z; d_xy, d_yz, …; sete orbitais f.
+- Permite isolar um lóbulo ou conjunto (ex.: só p_z, só d_xy).
+- Dados em `src/data/orbitaisOrientacoes.js`.
+
+#### Menu Níveis *(modelo Bohr)*
+
+- Destaca uma camada de órbita (`n=1`, `n=2`, …) ou «Todas as camadas».
+- Útil para comparar o preenchimento das órbitas circulares de Bohr.
 
 #### Interação com o modelo
 
@@ -146,14 +165,26 @@ No canto superior direito da cena aparecem o **símbolo** (grande), o **número 
 - Sincronizada com scroll do rato e pinch — mover a barra ou usar gestos produz o mesmo efeito.
 - Range da câmera: Z entre **60** (muito perto) e **1000** (muito longe); valor inicial **520**.
 
-#### Núcleo — dois modos
+- Range da câmera: Z entre **60** (muito perto) e **1000** (muito longe); valor inicial **520**.
+- Ao atingir o **zoom máximo** (Z ≈ 60), abre-se a **vista ampliada do núcleo** (ver abaixo).
 
-| Modo | Quando aparece |
-|------|----------------|
+#### Núcleo — modos e vista ampliada
+
+| Modo / vista | Quando aparece |
+|--------------|----------------|
 | **Simples** | Câmera afastada (esfera cinzenta única) |
 | **Detalhado** | Zoom próximo **ou** botão «Mostrar núcleo» |
+| **Vista ampliada** | Zoom máximo no átomo (scroll, pinch ou barra no topo) |
 
-No modo detalhado, prótons (vermelho) e nêutrons (cinza) movem-se ligeiramente dentro do volume nuclear.
+No modo detalhado, prótons (**p⁺**, vermelho) e nêutrons (**n**, cinza) movem-se ligeiramente dentro do volume nuclear, com etiquetas nas esferas.
+
+**Vista ampliada do núcleo** (`Nucleo3D.jsx`):
+
+- Segundo diálogo em ecrã completo, só com o núcleo ampliado (escala ~3,5×).
+- Zoom próprio: Z entre **6** e **100** (permite aproximar muito mais que no átomo).
+- Barra superior: **«Átomo»** (voltar), contagem p⁺/n, rotação, eixos.
+- **Voltar:** botão «Átomo», ou afastar o zoom ao máximo na vista do núcleo.
+- Disponível a partir de **qualquer** modelo atómico (quântico, Bohr, Thomson, Dalton).
 
 #### Coordenadas 3D
 
@@ -194,8 +225,9 @@ Os textos estão em `src/content/appInfoPt.js` (objecto `INFO_PAGES`). A documen
 ```
 Abrir app → Clicar num elemento → Ler dados no painel
     → Abrir Modelo 3D → Explorar com zoom/rotação
-    → Filtrar subnível (ex.: só «d») → Observar elétrons desse tipo
-    → Ativar rotação automática (opcional) → Fechar
+    → Filtrar subnível / nível / orbital (ex.: só 2pₓ)
+    → Zoom máximo → Vista ampliada do núcleo (p⁺ e n)
+    → Botão «Átomo» para voltar → Fechar
 ```
 
 ### 2.7 Dicas de desempenho
@@ -204,7 +236,7 @@ Em dispositivos mais lentos:
 
 - Oculte elétrons se só precisar de ver orbitais.
 - Desligue coordenadas.
-- Filtre subníveis — menos partículas visíveis = melhor FPS.
+- Filtre subníveis, níveis (*n*) ou orbitais — menos partículas visíveis = melhor FPS.
 - Evite modo RA em aparelhos antigos.
 
 ---
@@ -278,10 +310,18 @@ tabelaperiodicadinamica/
     ├── components/
     │   ├── TabelaPeriodica.jsx
     │   ├── TabelaPeriodica.css
-    │   ├── Atom3D.jsx      # Cena Three.js
-    │   └── AppMenu.jsx     # Barra + drawer + diálogos info
+    │   ├── Atom3D.jsx              # Modelo quântico
+    │   ├── AtomModeloHistorico.jsx # Dalton, Thomson, Bohr
+    │   ├── Nucleo3D.jsx            # Vista ampliada do núcleo
+    │   ├── nucleo3DShared.js       # Construção e animação de núcleons
+    │   ├── particulasTextura3D.js  # Texturas e⁻, p⁺, n
+    │   ├── coordenadas3D.js        # Eixos e grelha
+    │   ├── iluminacao3D.js         # Luzes da cena
+    │   └── AppMenu.jsx             # Barra + drawer + diálogos info
     ├── data/
-    │   └── elementosQuimicos.js
+    │   ├── elementosQuimicos.js
+    │   ├── orbitaisOrientacoes.js  # px, py, d_xy, f, …
+    │   └── tiposModeloAtomico.js
     └── content/
         └── appInfoPt.js
 ```
@@ -302,9 +342,10 @@ main.jsx (ThemeProvider)
             ├── TabelaPeriodica.jsx
             │       └── elementoInfo → ElementoInfoCard (desktop)
             ├── Drawer inferior → ElementoInfoCard (mobile)
-            └── Dialog 3D
-                    ├── Atom3D.jsx
-                    └── Barra de zoom lateral (Slider vertical)
+            └── Dialog 3D (átomo)
+                    ├── Atom3D.jsx  ou  AtomModeloHistorico.jsx
+                    ├── Barra de zoom lateral
+                    └── Dialog 3D (núcleo) → Nucleo3D.jsx
 ```
 
 ### 5.2 Estado principal (`App.jsx`)
@@ -314,13 +355,18 @@ main.jsx (ThemeProvider)
 | `numeroAtomico` | `number` | Elemento ativo (1–118) |
 | `elementoSelecionado` | `number` | Destaque na tabela |
 | `painelElementoAberto` | `boolean` | Drawer mobile aberto |
-| `dialogAberto` | `boolean` | Visualizador 3D aberto |
+| `dialogAberto` | `boolean` | Visualizador 3D do átomo aberto |
+| `dialogNucleoAberto` | `boolean` | Vista ampliada do núcleo aberta |
+| `zoomCameraNucleo` | `number` | Distância Z na vista do núcleo (6–100) |
 | `mostrarEletrons` | `boolean` | Visibilidade dos elétrons |
 | `mostrarCoordenadas` | `boolean` | Eixos e grelha 3D |
 | `rotacaoAutomatica` | `boolean` | Rotação contínua do modelo |
-| `zoomCamera` | `number` | Distância Z da câmera (60–1000) |
+| `zoomCamera` | `number` | Distância Z da câmera do átomo (60–1000) |
 | `forcarNucleoDetalhado` | `boolean` | Núcleo com prótons/nêutrons |
 | `subniveisVisiveis` | `{s,p,d,f}` | Filtro de subníveis |
+| `nivelEnergiaQuantico` | `number \| null` | Filtro de camada n (quântico) |
+| `orbitaisOrientacaoVisiveis` | `object` | Filtro px, py, d_xy, … |
+| `camadaBohrDestaque` | `number \| null` | Camada n destacada (Bohr) |
 | `modoRealidadeAumentada` | `boolean` | Câmera RA (mobile) |
 | `drawerAberto` | `boolean` | Menu lateral |
 | `paginaInfo` | `string \| null` | Página info ativa |
@@ -439,7 +485,18 @@ Exemplos: Cr → `4s¹ 3d⁵`; Cu → `4s¹ 3d¹⁰`; La → `5d¹ 4f⁰ 6s²`; 
 
 > Configuração **completa** (não condensada com gás nobre). Apenas átomo **neutro** no estado fundamental.
 
-### 6.5 Layout da tabela (`periodosTabela`)
+### 6.5 Orientações orbitais (`orbitaisOrientacoes.js`)
+
+| Export | Conteúdo |
+|--------|----------|
+| `ORBITAIS_P` | `px`, `py`, `pz` |
+| `ORBITAIS_D` | `dxy`, `dyz`, `dxz`, `dx2-y2`, `dz2` |
+| `ORBITAIS_F` | Sete identificadores (ex.: `fx(x2-3y2)`, `fxyz`, …) |
+| `ROTULOS_ORBITAL` | Rótulos UI (pₓ, d_xy, …) |
+| `criarOrbitaisOrientacaoVisiveisIniciais()` | Estado inicial dos filtros Orbitais ▾ |
+| `obterNiveisEnergiaOcupados(config)` | Lista de n ocupados para menu Níveis ▾ |
+
+### 6.6 Layout da tabela (`periodosTabela`)
 
 Matriz 7×18 com números atómicos; `0` = célula vazia. Lantanídeos (57–71) e actinídeos (89–103) aparecem em linhas separadas.
 
@@ -447,9 +504,9 @@ Matriz 7×18 com números atómicos; `0` = célula vazia. Lantanídeos (57–71)
 
 ## 7. Visualizador 3D (Three.js)
 
-Ficheiro: `src/components/Atom3D.jsx`
+Ficheiros principais: `Atom3D.jsx` (quântico), `AtomModeloHistorico.jsx` (históricos), `Nucleo3D.jsx` (vista do núcleo), `nucleo3DShared.js`, `particulasTextura3D.js`.
 
-### 7.1 Props
+### 7.1 Props (`Atom3D`)
 
 | Prop | Tipo | Default | Descrição |
 |------|------|---------|-----------|
@@ -458,13 +515,18 @@ Ficheiro: `src/components/Atom3D.jsx`
 | `mostrarEletrons` | `boolean` | `true` | Exibe esferas dos elétrons |
 | `forcarNucleoDetalhado` | `boolean` | `false` | Força núcleo granular |
 | `subniveisVisiveis` | `object` | todos `true` | Filtro s/p/d/f |
+| `nivelEnergiaQuantico` | `number \| null` | `null` | Filtro camada n |
+| `orbitaisOrientacaoVisiveis` | `object` | todos `true` | Filtro px, py, … |
 | `fundoTransparente` | `boolean` | `false` | Fundo alpha (modo RA) |
 | `mostrarCoordenadas` | `boolean` | `true` | Eixos e grelha |
 | `rotacaoAutomatica` | `boolean` | `false` | Rotação contínua |
-| `zoomCamera` | `number` | `520` | Distância Z da câmera (controlada pela barra de zoom) |
-| `onZoomChange` | `function` | — | Callback quando scroll/pinch altera o zoom |
+| `zoomCamera` | `number` | `520` | Distância Z (barra de zoom) |
+| `onZoomChange` | `function` | — | Callback ao alterar zoom |
+| `onZoomLimiteNucleo` | `function` | — | Chamado ao atingir zoom máximo |
 
-Constantes exportadas: `CAMERA_Z_MIN`, `CAMERA_Z_MAX`, `CAMERA_Z_INICIAL`, `cameraZParaSlider()`, `sliderParaCameraZ()`.
+Constantes exportadas (`Atom3D`): `CAMERA_Z_MIN` (60), `CAMERA_Z_MAX` (1000), `CAMERA_Z_INICIAL` (520), `cameraZParaSlider()`, `sliderParaCameraZ()`.
+
+Constantes exportadas (`Nucleo3D`): `CAMERA_NUCLEO_Z_MIN` (6), `CAMERA_NUCLEO_Z_MAX` (100), `CAMERA_NUCLEO_Z_INICIAL` (52), `cameraNucleoZParaSlider()`, `sliderParaCameraNucleoZ()`.
 
 ### 7.2 Cena Three.js
 
@@ -473,7 +535,8 @@ Constantes exportadas: `CAMERA_Z_MIN`, `CAMERA_Z_MAX`, `CAMERA_Z_INICIAL`, `came
 | Câmera | `PerspectiveCamera`, FOV 75°, posição Z inicial 520 |
 | Renderer | WebGL, antialias, tone mapping ACES, sRGB |
 | Grupo principal | `atomGroup` — núcleo, orbitais, elétrons, coordenadas |
-| Zoom | Z entre 60 e 1000 — scroll, pinch **ou barra lateral** |
+| Zoom (átomo) | Z entre 60 e 1000 — scroll, pinch **ou barra lateral**; no mínimo dispara `onZoomLimiteNucleo` |
+| Zoom (núcleo) | Z entre 6 e 100 — vista dedicada em `Nucleo3D` |
 
 ### 7.3 Iluminação (`configurarIluminacao`)
 
@@ -491,21 +554,23 @@ As luzes ficam **fixas na cena**; o modelo roda sob elas, reforçando a percepç
 
 ### 7.4 Partículas e geometria
 
-| Objeto | Geometria | Material |
-|--------|-----------|----------|
-| Elétrons | `SphereGeometry(3, 32, 32)` | `MeshPhongMaterial` via `criarMaterialEsfera` |
-| Prótons / nêutrons | Esfera dinâmica (raio variável) | Idem, cores vermelho/cinza |
+| Objeto | Geometria | Material / notas |
+|--------|-----------|------------------|
+| Elétrons | `SphereGeometry(3, 32, 32)` | Textura **e⁻** (`particulasTextura3D.js`) |
+| Prótons / nêutrons | Esfera dinâmica | Texturas **p⁺** / **n** |
 | Núcleo simples | `SphereGeometry(15, 32, 32)` | Cinza, semi-transparente |
-| Orbitais | Malhas por tipo s/p/d/f | `MeshPhongMaterial` translúcido |
+| Orbitais | Malhas s/p/d/f | `MeshLambertMaterial` + `alphaMap` radial (efeito esfumaçado) |
 
 ### 7.5 Formas orbitais (representação educativa)
 
 | Tipo | Representação visual |
 |------|---------------------|
-| **s** | Esfera centrada no núcleo |
-| **p** | Dois lobos por eixo (x, y, z) |
-| **d** | Conjunto de lobos em planos principais |
+| **s** | Esfera centrada no núcleo (nuvem esférica) |
+| **p** | Dois lobos por eixo (x, y, z); geometria `LatheGeometry` unificada |
+| **d** | Lobos esféricos nos centros definidos por orientação |
 | **f** | **Sete orbitais** com formas distintas e fases +/− (cor do subnível / tom azul) |
+
+Orbitais desenhados com **gradiente alpha** (bordas suaves, aspecto de densidade de probabilidade), sem brilho especular.
 
 #### Orbitais f (7 tipos)
 
@@ -530,19 +595,31 @@ Implementados conforme diagramas clássicos de química:
 
 | Animação | Descrição |
 |----------|-----------|
-| Elétrons | Órbita em coordenadas esféricas; transições com fade |
-| Núcleons | Movimento browniano dentro do limite nuclear |
-| Rotação automática | `atomGroup.rotation.y += 0.005` por frame (se ativa) |
-| Auto-rotação idle | Desativada por defeito |
+| Elétrons **s** | Movimento dentro da esfera do orbital (raio do subnível) |
+| Elétrons **p** | Oscilação ao longo do eixo do lóbulo (+ ou −); pequeno movimento lateral |
+| Elétrons **d / f** | Movimento limitado ao volume do lóbulo (centro alinhado à geometria) |
+| Núcleons | Movimento browniano (`animarNucleons` em `nucleo3DShared.js`) |
+| Rotação automática | `atomGroup.rotation.y += 0.005` por frame (se activa) |
 
-### 7.7 Coordenadas (`criarGrupoCoordenadas`)
+Transições ocasionais dos elétrons com fade, sempre **dentro** do orbital assignado.
+
+### 7.7 Vista ampliada do núcleo (`Nucleo3D.jsx`)
+
+| Aspeto | Detalhe |
+|--------|---------|
+| Trigger | Zoom máximo no átomo (`onZoomLimiteNucleo`) ou slider do átomo a 100 % |
+| Conteúdo | Só `criarGrupoNucleoDetalhado()` ampliado (~3,5×) |
+| Fechar | Botão «Átomo», `onZoomLimiteAtomo` ao afastar zoom ao máximo |
+| Partilha | `nucleo3DShared.js` — distribuição, materiais e animação |
+
+### 7.8 Coordenadas (`criarGrupoCoordenadas`)
 
 - Linhas nos três eixos (−300 a +300).
 - Sprites com etiquetas `+X` … `−Z`.
 - `GridHelper` em Y = −280.
 - Grupo nomeado `atom-coordinates`; preservado ao redesenhar o átomo.
 
-### 7.8 Modo RA
+### 7.9 Modo RA
 
 - Vídeo `<video>` por baixo do canvas.
 - `fundoTransparente={true}` → `scene.background = null`, alpha 0.
@@ -685,8 +762,8 @@ Não há ficheiro `.env` nem variáveis obrigatórias. A aplicação não depend
 
 | Aspeto | Limitação |
 |--------|-----------|
-| Orbitais | Formas geométricas simplificadas (f melhorados, mas não rigorosos) |
-| Posições dos elétrons | Distribuição ilustrativa; f alinhados aos lobos principais |
+| Orbitais | Formas geométricas simplificadas com aspecto esfumaçado (não rigorosas) |
+| Posições dos elétrons | Dentro dos lóbulos de forma ilustrativa; Hund não modelada |
 | Configuração eletrónica | Aufbau + exceções parciais; Hund não aplicada |
 | Nêutrons | Isótopo estável representativo; não há seletor de isótopo |
 | Elementos superpesados | Dados aproximados (Z > 100) |

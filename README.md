@@ -62,16 +62,25 @@ Diálogo em **ecrã completo** (desktop e mobile), fundo `#263238`, barra de fer
 
 #### Modelo quântico
 
-- **Núcleo** simples (afastado) ou **detalhado** (prótons/nêutrons animados).
-- Orbitais **s, p, d, f** com formas educativas simplificadas; cores distintas para **4f** (rosa) e **5f** (laranja).
-- Elétrons, prótons e nêutrons como esferas com iluminação em camadas.
+- **Núcleo** simples (afastado) ou **detalhado** (prótons **p⁺** e nêutrons **n** com etiquetas e movimento suave).
+- Orbitais **s, p, d, f** com aspecto de **nuvem de probabilidade** (bordas esfumaçadas); cores distintas para **4f** (rosa) e **5f** (laranja).
+- Elétrons (**e⁻**) animados **dentro do orbital** a que pertencem (lóbulo p, d ou f correspondente).
+- Filtros **Subníveis ▾**, **Níveis ▾** (camada principal *n*) e **Orbitais ▾** (pₓ, pᵧ, d_xy, …).
 - Átomo **parado** ao abrir; rotação opcional.
+
+#### Vista ampliada do núcleo
+
+Quando o zoom do átomo chega ao **máximo** (barra lateral, scroll ou pinça), abre-se automaticamente uma **segunda tela** em ecrã completo — igual ao visualizador, mas só com o núcleo ampliado, para explorar prótons e nêutrons em detalhe.
+
+- **Voltar:** botão **«Átomo»** ou afastar o zoom ao máximo na vista do núcleo.
+- Zoom próprio (Z ≈ **6–100**, mais próximo que no átomo).
+- Contagem de **p⁺** e **n**; rotação e eixos disponíveis.
 
 #### Modelos históricos (Dalton, Thomson, Bohr)
 
 - Visualizações didácticas simplificadas por época.
 - **Rotação** e **eixos** disponíveis; elétrons animados (Thomson e Bohr).
-- Bohr: elétrons alinhados às linhas circulares das órbitas.
+- Bohr: elétrons alinhados às linhas circulares das órbitas; menu **Níveis ▾** para destacar uma camada *n*.
 
 #### Coordenadas 3D (todos os modelos)
 
@@ -83,10 +92,12 @@ Diálogo em **ecrã completo** (desktop e mobile), fundo `#263238`, barra de fer
 
 | Controlos | Disponível |
 |-----------|------------|
-| Elétrons, Núcleo, Subníveis ▾ | Só modelo **Quântico** |
+| Elétrons, Núcleo, Subníveis ▾, Níveis ▾, Orbitais ▾ | Só modelo **Quântico** |
+| Níveis ▾ (camadas *n*) | Só modelo **Bohr** |
 | Rotação, Eixos | **Todos** os modelos |
 | Câmera RA | Mobile — todos os modelos |
 | Zoom (scroll, pinch, barra lateral) | **Todos** |
+| Vista ampliada do núcleo | **Todos** — ao atingir zoom máximo |
 | Botões activos a **verde** | Barra sobreposta |
 
 #### Modo RA (telefóvel/tablet)
@@ -146,13 +157,18 @@ tabelaperiodicadinamica/
 │   ├── components/
 │   │   ├── TabelaPeriodica.jsx
 │   │   ├── TabelaPeriodica.css
-│   │   ├── Atom3D.jsx         # Modelo quântico (Three.js)
-│   │   ├── AtomModeloHistorico.jsx  # Dalton, Thomson, Bohr
-│   │   ├── coordenadas3D.js   # Eixos e grelha partilhados
-│   │   └── AppMenu.jsx        # Menu ☰ e páginas de ajuda
+│   │   ├── Atom3D.jsx              # Modelo quântico (Three.js)
+│   │   ├── AtomModeloHistorico.jsx # Dalton, Thomson, Bohr
+│   │   ├── Nucleo3D.jsx            # Vista ampliada só do núcleo
+│   │   ├── nucleo3DShared.js       # Prótons/nêutrons partilhados
+│   │   ├── particulasTextura3D.js  # Texturas e⁻, p⁺, n
+│   │   ├── coordenadas3D.js        # Eixos e grelha partilhados
+│   │   ├── iluminacao3D.js         # Luzes da cena
+│   │   └── AppMenu.jsx             # Menu ☰ e páginas de ajuda
 │   ├── data/
-│   │   ├── elementosQuimicos.js   # 118 elementos, Aufbau, cores
-│   │   └── tiposModeloAtomico.js  # Tipos e ordem histórica
+│   │   ├── elementosQuimicos.js    # 118 elementos, Aufbau, cores
+│   │   ├── orbitaisOrientacoes.js # px, py, d_xy, orbitais f, …
+│   │   └── tiposModeloAtomico.js   # Tipos e ordem histórica
 │   └── content/
 │       └── appInfoPt.js       # Textos PT do menu
 ├── package.json
@@ -203,10 +219,11 @@ SPA estática — pode ser hospedada em GitHub Pages, Netlify, Vercel ou qualque
 ## Limitações educativas
 
 - Orbitais e modelos históricos são **representações simplificadas**, não simulações rigorosas.
+- Elétrons movem-se dentro dos lóbulos de forma ilustrativa; a regra de Hund não é modelada.
 - Sem selector de isótopo; dados aproximados para Z > 100.
 - Desempenho pode reduzir com muitos elétrons + orbitais f + núcleo detalhado.
 
-**Dica:** oculte elétrons, eixos ou filtre subníveis para melhor fluidez em dispositivos modestos.
+**Dica:** oculte elétrons, eixos ou filtre subníveis/níveis/orbitais para melhor fluidez em dispositivos modestos.
 
 ---
 
